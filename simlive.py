@@ -11,16 +11,7 @@ import json
 from networkx.readwrite import json_graph
 import networkx as nx
 from itertools import islice
-
-class UserGroup(object):
-    # Defines a group of users at the same access point
-    def __init__(self, access_point):
-        self.access_point = access_point
-        self.queries = []
-
-    # Query stands for an user's query for content c
-    def addQuery(self, c):
-        self.queries.append(c)
+import random
 
 def k_shortest_paths(G, source, target, k, weight=None):
     return list(islice(nx.shortest_simple_paths(G, source, target, weight=weight), k))
@@ -48,4 +39,14 @@ if __name__ == "__main__":
             paths[i].append(k_shortest_paths(G, u, v, 3, weight='capacity'))
     # print ([p for p in paths[0][1]])
 
-    
+    # Video contents
+    contents = []
+    contents.append(switches[random.randint(0, len(switches)-1)])
+
+    # Queries
+    queries = [[] for _ in xrange(len(switches))]
+    for i in xrange(6):
+        queries[random.randint(0, len(queries)-1)].append(0)
+
+    # Qualities
+    qualities = [0, 1, 2, 3]
