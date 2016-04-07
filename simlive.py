@@ -25,9 +25,10 @@ if __name__ == "__main__":
 
     G = json_graph.node_link_graph(data)
 
-    switches, vms = [], []
-    for node in G.nodes():
-        switches.append(node) if isinstance(node, int) else vms.append(node) 
+    switches = G.nodes()
+    # switches, vms = [], []
+    # for node in G.nodes():
+    #     switches.append(node) if isinstance(node, int) else vms.append(node) 
 
     # Compute k shortest path
     paths = [[] for _ in xrange(len(G.nodes()))]
