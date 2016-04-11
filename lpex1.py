@@ -8,7 +8,7 @@ my_ub = [40.0, cplex.infinity, cplex.infinity]
 my_colnames = ["x1", "x2", "x3"]
 my_rhs = [20.0, 30.0]
 my_rownames = ["c1", "c2"]
-my_sense = "LL"
+my_sense = "LL" # "L" for "less-than", 2 "L" for 2 contraints
 
 def populatebyrow(prob):
     prob.objective.set_sense(prob.objective.sense.maximize)
@@ -22,13 +22,16 @@ def populatebyrow(prob):
     lbs = prob.variables.get_lower_bounds()
 
     # ub1 is just the first lower bound
-    ubl = prob.variables.get_upper_bounds(0)
+    ub1 = prob.variables.get_upper_bounds(0)
 
     # name is ["x1", "x3"]
     names = prob.variables.get_names([0, 2])
 
-    rows = [[[0, "x2", "x3"], [-1.0, 1.0, 1.0]],
-            [["x1", 1, 2], [1.0, -3.0, 1,0]]]
+    rows = [[[0, 1, 2], [-1.0, 1.0, 1.0]],
+            [[0, 1, 2], [1.0, -3.0, 1,0]]]
+    # We can also write as this
+    # rows = [[[0, "x2", "x3"], [-1.0, 1.0, 1.0]],
+    #         [["x1", 1, 2], [1.0, -3.0, 1,0]]]
 
     prob.linear_constraints.add(lin_expr = rows,
                                 senses = my_sense,
@@ -40,12 +43,20 @@ def populatebyrow(prob):
     cols = prob.variables.get_cols("x1", "x3")
 
 def populatebycolumn(prob):
-    prob.objectives.set_sense(prob.objective.sense.maximize)
+    prob.objective.set_sense(prob.objective.sense.maximize)
 
     prob.linear_constraints.add(rhs = my_rhs,
-                                sense = my_sense,
+                                senses = my_sense,
                                 names = my_rownames)
 
+    """
+    populate by columns
+    constraints: -x1+x2+x3<=20
+                 x1-3x2+x3<=30
+    converted into: -c1+c2
+                    c1-3c2
+                    c1+c2
+    """
     c = [[[0, 1], [-1.0, 1.0]],
          [["c1", 1], [1.0, -3.0]],
          [[0, "c2"], [1.0, 1.0]]]
@@ -59,12 +70,17 @@ def populatebynonzero(prob):
     prob.objective.set_sense(prob.objective.sense.maximize)
 
     prob.linear_constraints.add(rhs = my_rhs,
-                                senses = my_senses,
+                                senses = my_sense,
                                 names = my_rownames)
     prob.variables.add(obj = my_obj,
                        ub = my_ub,
                        names = my_colnames)
 
+    """
+    The following is a sparse matrix
+    number in rows and cols represents location in matrix
+    vals represent values at specific location
+    """
     rows = [0, 0, 0, 1, 1, 1]
     cols = [0, 1, 2, 0, 1, 2]
     vals = [-1.0, 1.0, 1.0, 1.0, -3.0, 1.0]
@@ -76,7 +92,7 @@ def populatebynonzero(prob):
     # or pass in a list of triples
     # prob.linear_constraints.set_coefficients([(0, 1, 1.0), (1, 1, -3.0)])
 
-def lpexl(pop_method):
+def lpex1(pop_method):
     try:
         my_prob = cplex.Cplex()
 
@@ -87,7 +103,7 @@ def lpexl(pop_method):
         if pop_method == "n":
             handle = populatebynonzero(my_prob)
 
-        my_prob = solve()
+        my_prob.solve()
     except CplexError, exc:
         print exc
         return
@@ -111,4 +127,24 @@ def lpexl(pop_method):
     for j in range(numcols):
         print "Column %d:   Value = %10f    Reduced cost = %10f" % (j, x[j], dj[j])
 
-    my_prob.write("lpexl.lp")
+    my_prob.write("lpex1.lp")
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2 or sys.argv[1] not in ["-r", "-c", "-n"]:
+        print "Usage: lpex1.py -X"
+        print "   where X is one of the following options"
+        print "      r          generate problem by row"
+        print "      c          generate problem by column"
+        print "      n          generate problem by nonzero"
+        print " Exiting..."
+        sys.exit(-1)
+    lpex1(sys.argv[1][1])
+else:
+    prompt = """Enter the letter indicating how the problem data should be populated:
+    r : populate by rows
+    c : populate by columns
+    n : populate by nonzeros\n ? > """
+    r = 'r'
+    c = 'c'
+    n = 'n'
+    lpex1(input(prompt))
