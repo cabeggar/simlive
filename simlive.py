@@ -17,7 +17,7 @@ def k_shortest_paths(G, source, target, k, weight=None):
     return list(islice(nx.shortest_simple_paths(G, source, target, weight=weight), k))
 
 if __name__ == "__main__":
-   
+
     # Read topology
     f = open("topo.json", "r")
     data = json.load(f)
@@ -28,16 +28,19 @@ if __name__ == "__main__":
     switches = G.nodes()
     # switches, vms = [], []
     # for node in G.nodes():
-    #     switches.append(node) if isinstance(node, int) else vms.append(node) 
+    #     switches.append(node) if isinstance(node, int) else vms.append(node)
 
     # Compute k shortest path
     paths = [[] for _ in xrange(len(G.nodes()))]
     for i, u in enumerate(G.nodes()):
+        print "i: " + str(i)
         for j, v in enumerate(G.nodes()):
             if i == j: continue
             # Compute k shortest path from u to v
             # Currently k hard coded as 3
             paths[i].append(k_shortest_paths(G, u, v, 3, weight='capacity'))
+
+    print paths
     # print ([p for p in paths[0][1]])
 
     # Video contents
