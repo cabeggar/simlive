@@ -46,7 +46,7 @@ class generator:
             _id += 1
         for u in G.nodes_iter():
             G.node[u]['video_src'] = []
-            G.node[u]['user_queries'] = []
+            G.node[u]['user_queries'] = {}
             G.node[u]['clouds'] = 0
 
         return G
@@ -75,7 +75,7 @@ class generator:
             _id += 1
         for u in G.nodes_iter():
             G.node[u]['video_src'] = []
-            G.node[u]['user_queries'] = []
+            G.node[u]['user_queries'] = {}
             G.node[u]['clouds'] = 0
 
         return G
@@ -89,7 +89,7 @@ class generator:
             _id += 1
         for u in G.nodes_iter():
             G.node[u]['video_src'] = []
-            G.node[u]['user_queries'] = []
+            G.node[u]['user_queries'] = {}
             G.node[u]['clouds'] = 0
 
         return G
