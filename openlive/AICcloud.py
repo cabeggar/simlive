@@ -1,21 +1,25 @@
-import json
+# import json
 import networkx as nx
-from networkx.readwrite import json_graph
+# from networkx.readwrite import json_graph
 from itertools import islice
 
 
 class d2resource:
-    def __init__(self, topo_file):
-        f = open(topo_file, "r")
-        data = json.load(f)
-        f.close()
+    def __init__(self, pickle_file):
+        self.topo = None
+        nx.read_gpickle(self.topo, pickle_file)
 
-        self.topo = json_graph.node_link_graph(data)
         self.V = len(self.topo.nodes)    # node no
+        self.E = len(self.topo.edges)    # edge no
         self.N = 3                  # path no per node pair
+        self.Q = [0.0005, 0.0015, 0.003, 0.005]
 
         self.paths = self._kshortest(self, self.N)
+        # self.path_node_assoc
+        self.link_path_assoc = [set()] * self.E
+        self._cal_link_path_assoc()
 
+    # routing
     def _kshortest(self, k):
         paths = [[] for _ in xrange(self.V)]
 
@@ -29,6 +33,17 @@ class d2resource:
                     weight='capacity')))
 
         return paths
+
+    def _cal_link_path_assoc(self):
+        for src in range(self.V-1):
+            for dst in range(src+1, self.V):
+                for nid in range(self.N):
+                    path = self.paths[src][dst][nid]
+
+                    for i in range(1, len(path)):
+                        link_id = self.topo[path[i-1]][path[i]]['id']
+                        path_id = self.serialize_path_id(src, dst, nid)
+                        self.link_path_assoc[link_id].add(path_id)
 
     def serialize_path_id(self, src, dst, nid):
         if src == dst:
@@ -82,15 +97,6 @@ class d2resource:
         dst = link_id - (2*self.V-src-1)*src/2 + src + 1
 
         return [src, dst]
-
-    def get_path_links_assoc(self, src, dst, nid):
-        assoc_links = []
-        path = self.paths[src][dst][nid]
-
-        for i in range(1, len(path)):
-            assoc_links.append(self.serialize_link_id(path[i-1], path[i]))
-
-        return assoc_links
 
     def get_IO_bw(self):
         return nx.get_node_attributes(self.topo, 'IO')
