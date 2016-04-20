@@ -117,7 +117,6 @@ class generator:
             for value in _paths.itervalues():
                 paths.append(value)
             paths.sort(key = lambda path: len(path))
-            print paths
             for i in xrange(block_no-1):
                 blocks.append(paths[-i-1][-1])
 
@@ -140,7 +139,7 @@ class generator:
 
 
     def _assign_cloud_resource(self, cloud_no, avg_comp_resource):
-        # TODO: randomly pick cloud_no sites
+        # Randomly pick some locations for clouds
         clouds = []
         if cloud_no == self.topo.number_of_nodes():
             clouds = self.topo.nodes()
@@ -154,26 +153,60 @@ class generator:
             for value in _paths.itervalues():
                 paths.append(value)
             paths.sort(key = lambda path: len(path))
-            print paths
             for i in xrange(cloud_no-1):
                 clouds.append(paths[-i-1][-1])
 
+        # Assigning random computing power
         for cloud in clouds:
             self.topo.node[cloud]['clouds'] = random.uniform(0.5*avg_comp_resource, 1.5*avg_comp_resource)
 
 
     def _assign_link_bandwidth(self, avg_link_bandwidth):
-        # TODO: assign randomly 1/2 avg_link_bandwidth to 3/2 avg_link_band
+        # Assigning random link bandwidth
         for u, v in self.topo.edges_iter():
             self.topo.edge[u][v]['bandwidth'] = random.uniform(0.5*avg_link_bandwidth, 1.5*avg_link_bandwidth)
 
+    def config_section_map(self, config, section):
+        dict1 = {}
+        options = config.options(section)
+        for option in options:
+            try:
+                dict1[option] = config.get(section, option)
+                if dict1[option] == -1:
+                    print("skip: %s" % option)
+            except:
+                print("exception on %s!" % option)
+                dict1[option] = None
+        return dict1
+
     def start_generator(self, config_file, sav_topo):
         config = ConfigParser.ConfigParser()
-        config.read(open(config_file))
+        config.read(config_file)
+        # config.read("config.ini")
 
-        # TODO cal the above functions to assign resource and demand
+        videos = self.config_section_map(config, "Videos")
+        src_no = int(videos['sourcenumbers'])
+
+        users = self.config_section_map(config, "Users")
+        block_no = int(users['blocknumbers'])
+        user_no = int(users['usernumbers'])
+
+        clouds = self.config_section_map(config, "CloudResources")
+        cloud_no = int(clouds['cloudnumbers'])
+        avg_comp_resource = int(clouds['averagecomputingresources'])
+
+        links = self.config_section_map(config, "LinkBandwidth")
+        avg_link_bandwidth = int(links['averagelinkbandwidth'])
+
+        self._assign_src(src_no)
+        self._assign_user(block_no, user_no, src_no)
+        self._assign_cloud_resource(cloud_no, avg_comp_resource)
+        self._assign_link_bandwidth(avg_link_bandwidth)
 
         # TODO save the topology with resoruce configured
-        f = open(sav_topo)
+        # f = open(sav_topo)
         # f.write( ... some json parsed topology file) ...
-        f.close()
+        # f.close()
+
+        # pickle
+        nx.write_gpickle(self.topo, sav_topo)
