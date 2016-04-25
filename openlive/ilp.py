@@ -6,6 +6,7 @@ class ilp():
         self.problem = cplex.Cplex()
         self.problem.objective.set_sense(problem.objective.sense.minimize)
         self.network = G
+        self.qualities = qualities
 
         self.V = G.number_of_nodes()    # Number of nodes
         self.K = 0
@@ -45,7 +46,7 @@ class ilp():
         return 0
 
     def get_quality(self, quality_id):
-        return qualities[quality_id]
+        return self.qualities[quality_id]
 
     def populate_constraints(self):
         rows = []
@@ -60,7 +61,7 @@ class ilp():
         for vertex_i in range(self.V):
             for demand_i in range(self.M):
                 for quality_i in range(self.Q):
-                    rows.append(vertex_i)
+                    rows.append(vertex_i*demand_i+demand_i)
                     cols.append(self.get_alpha_column(vertex_i,
                                                       demand_i,
                                                       quality_i))
@@ -98,7 +99,7 @@ class ilp():
                     val += self.get_delta(access_i, demand_i, video_i)
                 for vms_i in xrange(self.V):
                     for quality_i in xrange(self.Q):
-                        rows.append(row_offset + demand_i*video_i*vms_i)
+                        rows.append(row_offset + demand_i*video_i*vms_i + video_i*vms_i + vms_i)
                         cols.append(self.get_alpha_column(vms_i, demand_i, quality_i))
                         vals.append(val*self.get_quality(quality_i))
                     # constr. 3
@@ -106,9 +107,19 @@ class ilp():
                     for quality_i in xrange(self.Q):
                         for src_i in xrange(self.V):
                             for path_i in xrange(self.N):
-                                rows.append(row_offset + demand_i*video_i*vms_i)
+                                rows.append(row_offset + demand_i*video_i*vms_i + video_i*vms_i + vms_i)
                                 cols.append(self.get_gamma_column(src_i, vms_i, video_i, path_i, quality_i))
                                 vals.append(-self.get_quality(quality_i))
                     my_rhs.append(0)
         row_offset += self.M*self.K*self.V
 
+        # constr. 5
+        # Average quality should be no smaller than a predefined rate
+        for vms_i in xrange(self.V):
+            for query_i in xrange(self.M):
+                for quality_i in xrange(self.Q):
+                    rows.append(row_offset)
+                    cols.append(self.get_alpha_column(vms_i, query_i, quality_i))
+                    vals.append(self.get_quality(quality_i))
+        my_rhs.append(self.qualities[-1]*self.M)
+        row_offset += 1
