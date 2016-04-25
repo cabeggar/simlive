@@ -28,15 +28,19 @@ class d2resource:
                 if i == j:
                     continue
 
+                # get k shortest from all shortest simple paths from u to v
+                # weight set to 1 to get shortest hops path
                 paths[i].append(list(islice(
-                    nx.shortest_simple_paths(self.topo, u, v, k),
-                    weight='capacity')))
+                    nx.shortest_simple_paths(self.topo, u, v, weight=weight),
+                    k)))
 
         return paths
 
+    # To get whether a link is on n-th path from s to d
     def _cal_link_path_assoc(self):
         for src in range(self.V-1):
             for dst in range(src+1, self.V):
+                if src == dst: continue
                 for nid in range(self.N):
                     path = self.paths[src][dst][nid]
 
@@ -50,10 +54,13 @@ class d2resource:
             return -1
 
         if src > dst:
+            """
             temp = src
             src = dst
             dst = temp
-
+            """
+            src, dst = dst, src
+            
         path_id = ((2*self.V-src-1)*src/2 + (dst - src - 1))*self.N + nid
 
         return path_id
@@ -80,9 +87,12 @@ class d2resource:
             return -1
 
         if src > dst:
+            """
             temp = src
             src = dst
             dst = temp
+            """
+            src, dst = dst, src
 
         link_id = (2*self.V-src-1)*src/2 + (dst - src - 1)
 
@@ -102,4 +112,4 @@ class d2resource:
         return nx.get_node_attributes(self.topo, 'IO')
 
     def get_compute(self):
-        return nx.get_node_attributes(self.topo, 'compute')
+        return nx.get_node_attributes(self.topo, 'clouds')

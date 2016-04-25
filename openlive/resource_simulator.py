@@ -86,6 +86,7 @@ class generator:
         _id = 0
         for u, v in G.edges_iter():
             G.edge[u][v]['id'] = _id
+            G.edge[u][v]['weight'] = 1
             _id += 1
         for u in G.nodes_iter():
             G.node[u]['video_src'] = []
