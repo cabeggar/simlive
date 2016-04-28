@@ -26,6 +26,7 @@ class d2resource:
         for i, u in enumerate(self.topo.nodes()):
             for j, v in enumerate(self.topo.nodes()):
                 if i == j:
+                    paths[i].append([])
                     continue
 
                 # get k shortest from all shortest simple paths from u to v
