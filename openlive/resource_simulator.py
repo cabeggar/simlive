@@ -160,7 +160,7 @@ class generator:
         # Assigning random computing power
         for cloud in clouds:
             self.topo.node[cloud]['clouds'] = random.uniform(0.5*avg_comp_resource, 1.5*avg_comp_resource)
-
+            self.topo.node[cloud]['IO'] = random.uniform(0.5*avg_IO_bandwidth, 1.5*avg_IO_bandwidth)
 
     def _assign_link_bandwidth(self, avg_link_bandwidth):
         # Assigning random link bandwidth
@@ -195,13 +195,14 @@ class generator:
         clouds = self.config_section_map(config, "CloudResources")
         cloud_no = int(clouds['cloudnumbers'])
         avg_comp_resource = int(clouds['averagecomputingresources'])
+        avg_IO_bandwidth = int(clouds['averageIObandwidth'])
 
         links = self.config_section_map(config, "LinkBandwidth")
         avg_link_bandwidth = int(links['averagelinkbandwidth'])
 
         self._assign_src(src_no)
         self._assign_user(block_no, user_no, src_no)
-        self._assign_cloud_resource(cloud_no, avg_comp_resource)
+        self._assign_cloud_resource(cloud_no, avg_comp_resource, avg_IO_bandwidth)
         self._assign_link_bandwidth(avg_link_bandwidth)
 
         # TODO save the topology with resoruce configured
