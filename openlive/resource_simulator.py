@@ -139,7 +139,7 @@ class generator:
         self.topo.graph["userNo"] = user_no
 
 
-    def _assign_cloud_resource(self, cloud_no, avg_comp_resource):
+    def _assign_cloud_resource(self, cloud_no, avg_comp_resource, avg_IO_bandwidth):
         # Randomly pick some locations for clouds
         clouds = []
         if cloud_no == self.topo.number_of_nodes():
@@ -195,7 +195,7 @@ class generator:
         clouds = self.config_section_map(config, "CloudResources")
         cloud_no = int(clouds['cloudnumbers'])
         avg_comp_resource = int(clouds['averagecomputingresources'])
-        avg_IO_bandwidth = int(clouds['averageIObandwidth'])
+        avg_IO_bandwidth = int(clouds['averageiobandwidth'])
 
         links = self.config_section_map(config, "LinkBandwidth")
         avg_link_bandwidth = int(links['averagelinkbandwidth'])
