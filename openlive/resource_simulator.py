@@ -48,6 +48,7 @@ class generator:
             G.node[u]['video_src'] = []
             G.node[u]['user_queries'] = {}
             G.node[u]['clouds'] = 0
+            G.node[u]['IO'] = 0
 
         return G
 
@@ -77,6 +78,7 @@ class generator:
             G.node[u]['video_src'] = []
             G.node[u]['user_queries'] = {}
             G.node[u]['clouds'] = 0
+            G.node[u]['IO'] = 0
 
         return G
 
@@ -92,6 +94,7 @@ class generator:
             G.node[u]['video_src'] = []
             G.node[u]['user_queries'] = {}
             G.node[u]['clouds'] = 0
+            G.node[u]['IO'] = 0
 
         return G
 

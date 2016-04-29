@@ -59,6 +59,9 @@ class ilp():
             if self.network.edge[u][v]['id'] == link_id:
                 return self.network.edge[u][v]['bandwidth']
 
+    def get_IO(self, vms_id):
+        return self.network.node[vms_id]['IO']
+
     def populate_constraints(self):
         rows = []
         cols = []
@@ -203,5 +206,19 @@ class ilp():
             my_rhs.append(self.get_bandwidth(link_i))
         row_offset += self.E
 
+        # constr. 11
+        # Ingress bandwidth contributed by the deliver tree
+        for vms_i in xrange(self.V):
+            
+            for content_i in xrange(self.K):
+                # constr. 3
+                for quality_i in xrange(self.Q):
+                    for src_i in xrange(self.V):
+                        for path_i in xrange(self.N):
+                            rows.append(row_offset + vms_i)
+                            cols.append(self.get_gamma_column(src_i, vms_i, content_i, path_i, quality_i))
+                            vals.append(self.get_quality(quality_i))
+            my_rhs.append(self.get_io(vms_i))
+        row_offset += self.V
 
 
