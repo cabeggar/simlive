@@ -221,4 +221,29 @@ class ilp():
             my_rhs.append(self.get_io(vms_i))
         row_offset += self.V
 
+        # constr. 12
+        # Egress bandwidth utilization contributed by bothe the delivery tree and the user access
+        for vms_i  in xrange(self.V):
+
+            for query_i in xrange(self.M):
+                for quality_i in xrange(self.Q):
+                    val = 0
+                    for access_i in xrange(self.V):
+                        for content_i in xrange(self.K):
+                            val += self.get_delta(access_i, query_i, content_i)
+                    rows.append(row_offset + vms_i)
+                    cols.append(self.get_alpha_column(vms_i, query_i, quality_i))
+                    vals.append(self.get_quality(quality_i) * val)
+
+            for dst_i in xrange(self.V):
+                for content_i in xrange(self.K):
+                    for path_i in xrange(self.N):
+                        for quality_i in xrange(self.Q):
+                            rows.append(row_offset + vms_i)
+                            cols.append(self.get_gamma_column(vms_i, dst_i, content_i, path_i, quality_i))
+                            vals.append(self.get_quality(quality_i))
+            my_rhs.append(self.get_io(vms_i))
+        row_offset += self.V
+
+        # constr. 15
 
