@@ -313,3 +313,25 @@ class ilp():
                     my_obj[self.get_alpha_column(vms_i, query_i, quality_i)] += self.wc *
                                                                                 (ct*0.3 + cf*0.7) *
                                                                                 val
+
+        # Upper bound of values
+        my_ub = []
+        for vms_i in xrange(self.V):
+            if self.network.node[vms_i]['clouds'] != 0 or self.network.node[vms_i]['video_src'] != []:
+                my_ub.append(1)
+            else:
+                my_ub.append(0)
+        for src_i in xrange(self.V):
+            for dst_i in xrange(self.V):
+                for content_i in xrange(self.K):
+                    for path_i in xrange(self.N):
+                        for quality_i in xrange(self.X):
+                            if src_i == dst_i: my_ub.append(0)
+                            else: my_ub.append(1)
+        for vms_i in xrange(self.V):
+            for content_i in xrange(self.M):
+                for quality_i in xrange(self.Q):
+                    if self.network.node[vms_i]['clouds'] != 0 or self.network.node[vms_i]['video_src'] != []:
+                        my_ub.append(1)
+                    else: my_ub.append(0)
+
