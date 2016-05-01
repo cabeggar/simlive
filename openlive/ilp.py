@@ -2,12 +2,16 @@ import cplex
 import networkx as nx
 
 class ilp():
-    def __init__(self, G=nx.Graph(), n_paths, qualities, paths):
+    def __init__(self, G=nx.Graph(), n_paths, qualities, paths, ct, cf, wb, wc):
         self.problem = cplex.Cplex()
         self.problem.objective.set_sense(problem.objective.sense.minimize)
         self.network = G
         self.qualities = qualities
         self.paths = paths
+        self.ct = ct
+        self.cf = cf
+        self.wb = wb
+        self.wc = wc
 
         self.V = G.number_of_nodes()    # Number of nodes
         self.E = G.number_of_edges()
@@ -61,6 +65,9 @@ class ilp():
 
     def get_IO(self, vms_id):
         return self.network.node[vms_id]['IO']
+
+    def get_cloud(self, vms_id):
+        return self.network.node[vms_id]['clouds']
 
     def populate_constraints(self):
         rows = []
@@ -223,7 +230,7 @@ class ilp():
 
         # constr. 12
         # Egress bandwidth utilization contributed by bothe the delivery tree and the user access
-        for vms_i  in xrange(self.V):
+        for vms_i in xrange(self.V):
 
             for query_i in xrange(self.M):
                 for quality_i in xrange(self.Q):
@@ -246,4 +253,63 @@ class ilp():
         row_offset += self.V
 
         # constr. 15
+        for vms_i in xrange(self.V):
 
+            for dst_i in xrange(self.V):
+                for content_i in xrange(self.K):
+                    for path_i in xrange(self.N):
+                        for quality_i in xrange(self.Q):
+                            rows.append(row_offset + vms_i)
+                            cols.append(self.get_gamma_column(vms_i, dst_i, content_i, path_i, quality_i))
+                            vals.append(0.3*self.ct+0.7*self.cf)
+
+            for query_i in xrange(self.M):
+                for quality_i in xrange(self.Q):
+                    val = 0
+                    for access_i in xrange(self.V):
+                        for content_i in xrange(self.K):
+                            val += self.get_delta(access_i, query_i, content_i)
+                    rows.append(row_offset + vms_i)
+                    cols.append(self.get_alpha_column(vms_i, query_i, quality_i))
+                    vals.append((0.3*self.ct + 0.7*self.cf) * val)
+            my_rhs.append(self.get_cloud(vms_i))
+        row_offset += self.V
+
+        # optimization goals
+        my_obj = [0] * (self.V + self.V*self.V*self.K*self.N*self.Q + self.V*self.M*self.Q)
+        # U part
+        for link_i in xrange(self.E):
+            for src_i in xrange(self.V):
+                for dst_i in xrange(self.V):
+                    for content_i in xrange(self.K):
+                        for path_i in xrange(self.N):
+                            for quality_i in xrange(self.Q):
+                                my_obj[self.get_gamma_column(src_i, dst_i, content_i, path_i, quality_i)] +=
+                                    self.get_quality(quality_i) * self.get_beta(src_i, dst_i, link_i, path_i) * self.wb
+            for src_i in xrange(self.V):
+                for query_i in xrange(self.M):
+                    for quality_i in xrange(self.Q):
+                        val = 0
+                        for dst_i in xrange(self.V):
+                            for content_i in xrange(self.K):
+                                val += self.get_delta(dst_i, query_i, content_i)
+                        my_obj[self.get_alpha_column(src_i, query_i, quality_i)] += self.get_quality(quality_i) *
+                                                                                    self.get_beta(src_i, dst_i, link_i, 0) *
+                                                                                    val * self.wb
+        # C part
+        for vms_i in xrange(self.V):
+            for dst_i in xrange(self.V):
+                for content_i in xrange(self.K):
+                    for path_i in xrange(self.N):
+                        for quality_i in xrange(self.Q):
+                            my_obj[self.get_gamma_column(vms_i, dst_i, content_i, path_i, quality_i)] += self.wc * 
+                                                                                                         (ct*0.3 + cf*0.7)
+            for query_i in xrange(self.M):
+                for quality_i in xrange(self.Q):
+                    val = 0
+                    for access_i in xrange(self.V):
+                        for content_i in xrange(self.K):
+                            val += self.get_delta(access_i, query_i, content_i)
+                    my_obj[self.get_alpha_column(vms_i, query_i, quality_i)] += self.wc *
+                                                                                (ct*0.3 + cf*0.7) *
+                                                                                val
