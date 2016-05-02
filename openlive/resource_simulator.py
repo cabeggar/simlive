@@ -135,7 +135,10 @@ class generator:
             user_queries = {}
             for user in blocks_users[i]:
                 # Randomly assign contents to users
-                user_queries[user] = random.randint(0, src_no-1)
+                query_video = random.randint(0, src_no-1)
+                while query_video in self.topo.node[block]['video_src']:
+                    query_video = random.randint(0, src_no-1)
+                user_queries[user] = query_video
             self.topo.node[block]["user_queries"] = user_queries
 
         # Add userNo attr to graph
@@ -164,6 +167,10 @@ class generator:
         for cloud in clouds:
             self.topo.node[cloud]['clouds'] = random.uniform(0.5*avg_comp_resource, 1.5*avg_comp_resource)
             self.topo.node[cloud]['IO'] = random.uniform(0.5*avg_IO_bandwidth, 1.5*avg_IO_bandwidth)
+
+        for node in self.topo.nodes():
+            if node not in clouds and self.topo.node[node]['video_src'] != []:
+                self.topo.node[node]['IO'] = 100
 
     def _assign_link_bandwidth(self, avg_link_bandwidth):
         # Assigning random link bandwidth

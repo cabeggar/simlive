@@ -1,6 +1,7 @@
 from resource_simulator import generator
 import matplotlib.pyplot as plt
 import networkx as nx
+from ilp import ilp
 
 # Test part
 g = generator()
@@ -15,6 +16,9 @@ for node in g.topo.nodes():
     print g.topo.node[node]
 for u, v in g.topo.edges_iter():
     print g.topo.edge[u][v]
+
+lp = ilp(g.topo, 3, [10, 8, 6, 4], 0.5, 0.5, 0.5, 0.5)
+lp.solve()
 
 # Visualization part
 G = g.topo
