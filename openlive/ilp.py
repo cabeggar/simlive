@@ -136,6 +136,7 @@ class ilp():
 
         # User access constraints: Each query links to a VMS
         # constr. 1
+        row_col_pair = []
         for vertex_i in range(self.V):
             for demand_i in range(self.M):
 
@@ -163,7 +164,7 @@ class ilp():
                                                       demand_i,
                                                       quality_i))
                     vals.append(1)
-                    my_rhs.append(1)
+            my_rhs.append(1)
             my_sense += "E"
         row_offset += self.M
 
@@ -210,16 +211,17 @@ class ilp():
                 for path_i in xrange(self.N):
                     for src_i in xrange(self.V):
                         for quality_i in xrange(self.Q):
-                            rows.append(row_offset + vms_i*self.V + content_i)
+                            rows.append(row_offset + vms_i*self.K + content_i)
                             cols.append(self.get_gamma_column(src_i, vms_i, content_i, path_i, quality_i))
                             vals.append(1)
-                rows.append(row_offset + vms_i*self.V + content_i)
+                rows.append(row_offset + vms_i*self.K + content_i)
                 cols.append(vms_i)
                 vals.append(-1)
                 my_rhs.append(0)
                 my_sense += "L"
         row_offset += self.V * self.K
 
+        """
         # constr. 8
         for src_i in xrange(self.V):
             for dst_i in xrange(self.V):
@@ -229,6 +231,10 @@ class ilp():
                         for quality_i in xrange(self.Q):
                             rows.append(row_offset + src_i*self.V*self.K + dst_i*self.K + content_i)
                             cols.append(self.get_gamma_column(src_i, dst_i, content_i, path_i, quality_i))
+                            if (rows[-1], cols[-1]) in row_col_pair:
+                                print "Part One!"
+                                return
+                            row_col_pair.append((rows[-1], cols[-1]))
                             vals.append(1)
                     # constr. 10
                     for path_i in xrange(self.N):
@@ -236,11 +242,15 @@ class ilp():
                             for quality_i in xrange(self.Q):
                                 rows.append(row_offset + src_i*self.V*self.K + dst_i*self.K + content_i)
                                 cols.append(self.get_gamma_column(prev_src_i, src_i, content_i, path_i, quality_i))
+                                if (rows[-1], cols[-1]) in row_col_pair:
+                                    print "Part Two!"
+                                    return
+                                row_col_pair.append((rows[-1], cols[-1]))
                                 vals.append(-1)
                     my_rhs.append(0)
                     my_sense += "L"
         row_offset += self.V * self.V * self.K
-
+        """
 
         # constr. 9
         # The stream can be only relayed with the same quality, or be transcoded from higher quality to lower quality
@@ -259,6 +269,7 @@ class ilp():
                         # constr. 3
                         for quality_i in xrange(self.Q):
                             for prev_src_i in xrange(self.N):
+                                if prev_src_i == src_i: continue
                                 for path_i in xrange(self.N):
                                     rows.append(row_offset + src_i*self.V*self.K + dst_i*self.K + content_id)
                                     cols.append(self.get_gamma_column(prev_src_i, src_i, content_id, path_i, quality_i))
