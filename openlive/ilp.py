@@ -4,7 +4,7 @@ import networkx as nx
 from itertools import islice
 
 class ilp():
-    def __init__(self, G=nx.Graph(), n_paths=3, qualities=[100,80,60,40], ct=0.5, cf=0, wb=0.5, wc=0.5):
+    def __init__(self, G=nx.Graph(), n_paths=3, qualities=[10,8,6,4], ct=0.5, cf=0, wb=0.5, wc=0.5):
         self.problem = cplex.Cplex()
         self.network = G
         self.qualities = qualities
@@ -59,6 +59,8 @@ class ilp():
         numrows = my_prob.linear_constraints.get_num()
         numcols = my_prob.variables.get_num()
 
+        my_prob.write("ilp.lp")
+
         print
 
         # solution.get_status() returns an integer code
@@ -74,8 +76,6 @@ class ilp():
             print "Row %d:  Slack = %10f    Pi = %10f" % (i, slack[i], pi[i])
         for j in range(numcols):
             print "Column %d:   Value = %10f    Reduced cost = %10f" % (j, x[j], dj[j])
-
-        my_prob.write("ilp.lp")
 
     def get_gamma_column(self, src, dst, kid, nid, qid):
         return src*self.V*self.K*self.N*self.Q + \
@@ -153,7 +153,7 @@ class ilp():
                 my_sense += "L"
         row_offset += self.V * self.M
         """
-        
+       
         # constr. 1
         # Each query only get resource from a single VMS at a single quality
         for demand_i in range(self.M):
@@ -209,6 +209,7 @@ class ilp():
         print row_offset
 
         # constr. 5
+        focus_gamma = []
         for content_i in xrange(self.K):
             for src_i in xrange(self.V):
 
@@ -217,6 +218,7 @@ class ilp():
                         for quality_i in xrange(self.Q):
                             rows.append(row_offset + content_i * self.V + src_i)
                             cols.append(self.get_gamma_column(src_i, dst_i, content_i, path_i, quality_i))
+                            if self.get_lambda(src_i, content_i) == 1: focus_gamma.append(self.get_gamma_column(src_i, dst_i, content_i, path_i, quality_i))
                             vals.append(1)
                 if self.get_lambda(src_i, content_i) == 1:
                     print "C5", len(my_rhs)
@@ -226,24 +228,6 @@ class ilp():
                     my_rhs.append(0)
                     my_sense += "G"
         row_offset += self.K * self.V
-        print row_offset
-
-        # constr. 6
-        for vms_i in xrange(self.V):
-            for content_i in xrange(self.K):
-
-                for path_i in xrange(self.N):
-                    for src_i in xrange(self.V):
-                        for quality_i in xrange(self.Q):
-                            rows.append(row_offset + vms_i*self.K + content_i)
-                            cols.append(self.get_gamma_column(src_i, vms_i, content_i, path_i, quality_i))
-                            vals.append(1)
-                rows.append(row_offset + vms_i*self.K + content_i)
-                cols.append(vms_i)
-                vals.append(-1)
-                my_rhs.append(0)
-                my_sense += "L"
-        row_offset += self.V * self.K
         print row_offset
 
         # constr. 8
@@ -471,6 +455,7 @@ class ilp():
                     if self.network.node[vms_i]['clouds'] != 0 or self.network.node[vms_i]['video_src'] != []:
                         my_ub.append(1)
                     else: my_ub.append(0)
+        # for focus in focus_gamma: print my_ub[focus]
 
         # Row names
         my_rownames = []

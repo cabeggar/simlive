@@ -172,7 +172,8 @@ class generator:
 
         for node in self.topo.nodes():
             if node not in clouds and self.topo.node[node]['video_src'] != []:
-                self.topo.node[node]['IO'] = 100
+                self.topo.node[node]['IO'] = 10
+                self.topo.node[node]['clouds'] = 0.5
 
     def _assign_link_bandwidth(self, avg_link_bandwidth):
         # Assigning random link bandwidth
