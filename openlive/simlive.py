@@ -17,7 +17,9 @@ for node in g.topo.nodes():
 for u, v in g.topo.edges_iter():
     print g.topo.edge[u][v]
 
-"""
+lp = ilp(g.topo, 3, [10, 8, 6, 4], 0.5, 0, 0.5, 0.5)
+lp.solve()
+
 # Visualization part
 G = g.topo
 
@@ -48,7 +50,3 @@ for key, val in pos.iteritems():
 nx.draw_networkx_labels(G, _pos, labels=labels)
 
 plt.show()
-"""
-
-lp = ilp(g.topo, 3, [10, 8, 6, 4], 0.5, 0, 0.5, 0.5)
-lp.solve()

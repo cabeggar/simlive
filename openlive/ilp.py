@@ -133,26 +133,6 @@ class ilp():
         my_sense = ""
         row_offset = 0
         # populate row by row
-
-        """
-        # User access constraints: Each query links to a VMS
-        # constr. 1
-        for vertex_i in range(self.V):
-            for demand_i in range(self.M):
-
-                for quality_i in range(self.Q):
-                    rows.append(vertex_i*self.M+demand_i)
-                    cols.append(self.get_alpha_column(vertex_i,
-                                                      demand_i,
-                                                      quality_i))
-                    vals.append(1)
-                rows.append(vertex_i*self.M+demand_i)
-                cols.append(vertex_i)
-                vals.append(-1)
-                my_rhs.append(0)
-                my_sense += "L"
-        row_offset += self.V * self.M
-        """
        
         # constr. 1
         # Each query only get resource from a single VMS at a single quality
@@ -168,7 +148,6 @@ class ilp():
             my_rhs.append(1)
             my_sense += "E"
         row_offset += self.M
-        print row_offset
 
         # constr. 3
         # A user can access content stream at quality no higher than that is available at the VMS
@@ -193,7 +172,6 @@ class ilp():
                     my_rhs.append(0)
                     my_sense += "L"
         row_offset += self.M*self.K*self.V
-        print row_offset
 
         # constr. 4
         # Average quality should be no smaller than a predefined rate
@@ -206,7 +184,6 @@ class ilp():
         my_rhs.append(self.qualities[-1]*self.M)
         my_sense += "G"
         row_offset += 1
-        print row_offset
 
         # constr. 5
         focus_gamma = []
@@ -221,14 +198,12 @@ class ilp():
                             if self.get_lambda(src_i, content_i) == 1: focus_gamma.append(self.get_gamma_column(src_i, dst_i, content_i, path_i, quality_i))
                             vals.append(1)
                 if self.get_lambda(src_i, content_i) == 1:
-                    print "C5", len(my_rhs)
                     my_rhs.append(1)
                     my_sense += "E"
                 else:
                     my_rhs.append(0)
                     my_sense += "G"
         row_offset += self.K * self.V
-        print row_offset
 
         # constr. 8
         for dst_i in xrange(self.V):
@@ -246,7 +221,6 @@ class ilp():
                 my_rhs.append(0)
                 my_sense += "L"
         row_offset += self.V * self.K
-        print row_offset
         
         # constr. 9
         # The stream can be only relayed with the same quality, or be transcoded from higher quality to lower quality
@@ -273,7 +247,6 @@ class ilp():
                         my_rhs.append(0)
                     my_sense += "L"
         row_offset += self.V*self.V*self.K
-        print row_offset
 
         # constr. 10
         # Live contents can be streamed to a node with VMS placed
@@ -292,7 +265,6 @@ class ilp():
                 my_rhs.append(0)
                 my_sense += "L"
         row_offset += self.V*self.K
-        print row_offset
 
         # constr. 12
         # Link bandwidth constraint
@@ -325,7 +297,6 @@ class ilp():
             my_rhs.append(self.get_bandwidth(link_i))
             my_sense += "L"
         row_offset += self.E
-        print row_offset
 
         # constr. 13
         # Ingress bandwidth contributed by the deliver tree
@@ -342,7 +313,6 @@ class ilp():
             my_rhs.append(self.get_IO(vms_i))
             my_sense += "L"
         row_offset += self.V
-        print row_offset
 
         # constr. 14
         # Egress bandwidth utilization contributed by bothe the delivery tree and the user access
@@ -368,7 +338,6 @@ class ilp():
             my_rhs.append(self.get_IO(vms_i))
             my_sense += "L"
         row_offset += self.V
-        print row_offset
 
         # constr. 17
         for vms_i in xrange(self.V):
@@ -393,7 +362,6 @@ class ilp():
             my_rhs.append(self.get_cloud(vms_i))
             my_sense += "L"
         row_offset += self.V
-        print row_offset
 
         # optimization goals
         my_obj = [0] * (self.V + self.V*self.V*self.K*self.N*self.Q + self.V*self.M*self.Q)
