@@ -136,8 +136,10 @@ class generator:
             for user in blocks_users[i]:
                 # Randomly assign contents to users
                 query_video = random.randint(0, src_no-1)
+                """
                 while query_video in self.topo.node[block]['video_src']:
                     query_video = random.randint(0, src_no-1)
+                """
                 user_queries[user] = query_video
             self.topo.node[block]["user_queries"] = user_queries
 

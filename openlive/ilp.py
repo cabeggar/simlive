@@ -134,9 +134,9 @@ class ilp():
         row_offset = 0
         # populate row by row
 
+        """
         # User access constraints: Each query links to a VMS
         # constr. 1
-        row_col_pair = []
         for vertex_i in range(self.V):
             for demand_i in range(self.M):
 
@@ -152,8 +152,9 @@ class ilp():
                 my_rhs.append(0)
                 my_sense += "L"
         row_offset += self.V * self.M
+        """
         
-        # constr. 2
+        # constr. 1
         # Each query only get resource from a single VMS at a single quality
         for demand_i in range(self.M):
 
@@ -167,8 +168,9 @@ class ilp():
             my_rhs.append(1)
             my_sense += "E"
         row_offset += self.M
+        print row_offset
 
-        # constr. 4
+        # constr. 3
         # A user can access content stream at quality no higher than that is available at the VMS
         for demand_i in xrange(self.M):
             for video_i in xrange(self.K):
@@ -180,7 +182,7 @@ class ilp():
                         rows.append(row_offset + demand_i*self.K*self.V + video_i*self.V + vms_i)
                         cols.append(self.get_alpha_column(vms_i, demand_i, quality_i))
                         vals.append(val*self.get_quality(quality_i))
-                    # constr. 3
+                    # constr. 2
                     # Intermediate variable which calculates the available highest stream quality at VMS
                     for quality_i in xrange(self.Q):
                         for src_i in xrange(self.V):
@@ -191,8 +193,9 @@ class ilp():
                     my_rhs.append(0)
                     my_sense += "L"
         row_offset += self.M*self.K*self.V
+        print row_offset
 
-        # constr. 5
+        # constr. 4
         # Average quality should be no smaller than a predefined rate
         for vms_i in xrange(self.V):
             for query_i in xrange(self.M):
@@ -203,6 +206,27 @@ class ilp():
         my_rhs.append(self.qualities[-1]*self.M)
         my_sense += "G"
         row_offset += 1
+        print row_offset
+
+        # constr. 5
+        for content_i in xrange(self.K):
+            for src_i in xrange(self.V):
+
+                for dst_i in xrange(self.V):
+                    for path_i in xrange(self.N):
+                        for quality_i in xrange(self.Q):
+                            rows.append(row_offset + content_i * self.V + src_i)
+                            cols.append(self.get_gamma_column(src_i, dst_i, content_i, path_i, quality_i))
+                            vals.append(1)
+                if self.get_lambda(src_i, content_i) == 1:
+                    print "C5", len(my_rhs)
+                    my_rhs.append(1)
+                    my_sense += "E"
+                else:
+                    my_rhs.append(0)
+                    my_sense += "G"
+        row_offset += self.K * self.V
+        print row_offset
 
         # constr. 6
         for vms_i in xrange(self.V):
@@ -220,38 +244,26 @@ class ilp():
                 my_rhs.append(0)
                 my_sense += "L"
         row_offset += self.V * self.K
+        print row_offset
 
-        """
         # constr. 8
-        for src_i in xrange(self.V):
-            for dst_i in xrange(self.V):
-                for content_i in xrange(self.K):
+        for dst_i in xrange(self.V):
+            for content_i in xrange(self.K):
 
-                    for path_i in xrange(self.N):
+                for path_i in xrange(self.N):
+                    for src_i in xrange(self.V):
                         for quality_i in xrange(self.Q):
-                            rows.append(row_offset + src_i*self.V*self.K + dst_i*self.K + content_i)
+                            rows.append(row_offset + dst_i*self.K + content_i)
                             cols.append(self.get_gamma_column(src_i, dst_i, content_i, path_i, quality_i))
-                            if (rows[-1], cols[-1]) in row_col_pair:
-                                print "Part One!"
-                                return
-                            row_col_pair.append((rows[-1], cols[-1]))
                             vals.append(1)
-                    # constr. 10
-                    for path_i in xrange(self.N):
-                        for prev_src_i in xrange(self.V):
-                            for quality_i in xrange(self.Q):
-                                rows.append(row_offset + src_i*self.V*self.K + dst_i*self.K + content_i)
-                                cols.append(self.get_gamma_column(prev_src_i, src_i, content_i, path_i, quality_i))
-                                if (rows[-1], cols[-1]) in row_col_pair:
-                                    print "Part Two!"
-                                    return
-                                row_col_pair.append((rows[-1], cols[-1]))
-                                vals.append(-1)
-                    my_rhs.append(0)
-                    my_sense += "L"
-        row_offset += self.V * self.V * self.K
-        """
-
+                rows.append(row_offset + dst_i*self.K + content_i)
+                cols.append(dst_i)
+                vals.append(-1)
+                my_rhs.append(0)
+                my_sense += "L"
+        row_offset += self.V * self.K
+        print row_offset
+        
         # constr. 9
         # The stream can be only relayed with the same quality, or be transcoded from higher quality to lower quality
         for src_i in xrange(self.V):
@@ -266,7 +278,7 @@ class ilp():
                     if self.get_lambda(src_i, content_id) == 1:
                         my_rhs.append(self.qualities[0])
                     else:
-                        # constr. 3
+                        # constr. 2
                         for quality_i in xrange(self.Q):
                             for prev_src_i in xrange(self.N):
                                 if prev_src_i == src_i: continue
@@ -277,6 +289,7 @@ class ilp():
                         my_rhs.append(0)
                     my_sense += "L"
         row_offset += self.V*self.V*self.K
+        print row_offset
 
         # constr. 10
         # Live contents can be streamed to a node with VMS placed
@@ -295,12 +308,13 @@ class ilp():
                 my_rhs.append(0)
                 my_sense += "L"
         row_offset += self.V*self.K
+        print row_offset
 
-        # constr. 14
+        # constr. 12
         # Link bandwidth constraint
         for link_i in xrange(self.E):
 
-            # constr. 12
+            # constr. 10
             # Link utilization contributed by the delivery tree.
             for quality_i in xrange(self.Q):
                 for path_i in xrange(self.N):
@@ -311,7 +325,7 @@ class ilp():
                                 cols.append(self.get_gamma_column(src_i, dst_i, content_i, path_i, quality_i))
                                 vals.append(self.get_quality(quality_i)*self.get_beta(src_i, dst_i, link_i, path_i))
 
-            # constr. 13
+            # constr. 11
             # Link utilization contributed by the user access traffic
             for src_i in xrange(self.V):
                 for query_i in xrange(self.M):
@@ -327,13 +341,14 @@ class ilp():
             my_rhs.append(self.get_bandwidth(link_i))
             my_sense += "L"
         row_offset += self.E
+        print row_offset
 
-        # constr. 15
+        # constr. 13
         # Ingress bandwidth contributed by the deliver tree
         for vms_i in xrange(self.V):
             
             for content_i in xrange(self.K):
-                # constr. 3
+                # constr. 2
                 for quality_i in xrange(self.Q):
                     for src_i in xrange(self.V):
                         for path_i in xrange(self.N):
@@ -343,8 +358,9 @@ class ilp():
             my_rhs.append(self.get_IO(vms_i))
             my_sense += "L"
         row_offset += self.V
+        print row_offset
 
-        # constr. 16
+        # constr. 14
         # Egress bandwidth utilization contributed by bothe the delivery tree and the user access
         for vms_i in xrange(self.V):
 
@@ -368,8 +384,9 @@ class ilp():
             my_rhs.append(self.get_IO(vms_i))
             my_sense += "L"
         row_offset += self.V
+        print row_offset
 
-        # constr. 19
+        # constr. 17
         for vms_i in xrange(self.V):
 
             for dst_i in xrange(self.V):
@@ -392,6 +409,7 @@ class ilp():
             my_rhs.append(self.get_cloud(vms_i))
             my_sense += "L"
         row_offset += self.V
+        print row_offset
 
         # optimization goals
         my_obj = [0] * (self.V + self.V*self.V*self.K*self.N*self.Q + self.V*self.M*self.Q)
@@ -444,7 +462,8 @@ class ilp():
                 for content_i in xrange(self.K):
                     for path_i in xrange(self.N):
                         for quality_i in xrange(self.Q):
-                            if src_i == dst_i: my_ub.append(0)
+                            if src_i == dst_i and self.get_lambda(src_i, content_i) == 0:
+                                my_ub.append(0)
                             else: my_ub.append(1)
         for vms_i in xrange(self.V):
             for content_i in xrange(self.M):
@@ -483,8 +502,14 @@ class ilp():
 
         prob.objective.set_sense(prob.objective.sense.minimize)
         prob.linear_constraints.add(rhs = my_rhs,
-                                   senses = my_sense,
-                                   names = my_rownames)
+                                    senses = my_sense,
+                                    names = my_rownames)
+        """
+        prob.variables.add(obj = my_obj,
+                           ub = my_ub,
+                           names = my_colnames,
+                           types = [prob.variables.type.integer] * len(my_colnames))
+        """
         prob.variables.add(obj = my_obj,
                            ub = my_ub,
                            names = my_colnames)
