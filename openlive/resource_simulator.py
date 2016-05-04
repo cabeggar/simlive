@@ -167,13 +167,13 @@ class generator:
 
         # Assigning random computing power
         for cloud in clouds:
-            self.topo.node[cloud]['clouds'] = random.uniform(0.5*avg_comp_resource, 1.5*avg_comp_resource)
-            self.topo.node[cloud]['IO'] = random.uniform(0.5*avg_IO_bandwidth, 1.5*avg_IO_bandwidth)
+            self.topo.node[cloud]['clouds'] = int(random.uniform(0.5*avg_comp_resource, 1.5*avg_comp_resource))
+            self.topo.node[cloud]['IO'] = int(random.uniform(0.5*avg_IO_bandwidth, 1.5*avg_IO_bandwidth))
 
         for node in self.topo.nodes():
             if node not in clouds and self.topo.node[node]['video_src'] != []:
                 self.topo.node[node]['IO'] = 10
-                self.topo.node[node]['clouds'] = 0.5
+                self.topo.node[node]['clouds'] = 1
 
     def _assign_link_bandwidth(self, avg_link_bandwidth):
         # Assigning random link bandwidth

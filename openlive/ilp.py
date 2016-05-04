@@ -2,9 +2,10 @@ import cplex
 from cplex.exceptions import CplexError
 import networkx as nx
 from itertools import islice
+import cProfile, pstats, StringIO
 
 class ilp():
-    def __init__(self, G=nx.Graph(), n_paths=3, qualities=[10,8,6,4], ct=0.5, cf=0, wb=0.5, wc=0.5):
+    def __init__(self, G=nx.Graph(), n_paths=3, qualities=[10,8,6,4], ct=1, cf=0, wb=1, wc=1):
         self.problem = cplex.Cplex()
         self.network = G
         self.qualities = qualities
@@ -48,6 +49,8 @@ class ilp():
         return paths
 
     def solve(self):
+        pr = cProfile.Profile()
+        pr.enable()
         try:
             my_prob = cplex.Cplex()
             handle = self.populate_constraints(my_prob)
@@ -55,6 +58,7 @@ class ilp():
         except CplexError, exc:
             print exc
             return
+        pr.disable()
 
         numrows = my_prob.linear_constraints.get_num()
         numcols = my_prob.variables.get_num()
@@ -63,19 +67,32 @@ class ilp():
 
         print
 
+        f = open('result_lp', 'w+')
         # solution.get_status() returns an integer code
         print "Solution status = ", my_prob.solution.get_status(), ":",
+        f.write("Solution status = " + str(my_prob.solution.get_status()) + ":\n")
         # the following line prints the corresponding string
         print my_prob.solution.status[my_prob.solution.get_status()]
+        f.write(str(my_prob.solution.status[my_prob.solution.get_status()]) + "\n")
         print "Solution value = ", my_prob.solution.get_objective_value()
+        f.write("Solution value = " + str(my_prob.solution.get_objective_value()) + "\n")
         slack = my_prob.solution.get_linear_slacks()
         pi = my_prob.solution.get_dual_values()
         x = my_prob.solution.get_values()
         dj = my_prob.solution.get_reduced_costs()
         for i in range(numrows):
             print "Row %d:  Slack = %10f    Pi = %10f" % (i, slack[i], pi[i])
+            f.write("Row %d:  Slack = %10f    Pi = %10f" % (i, slack[i], pi[i]) + "\n")
         for j in range(numcols):
             print "Column %d:   Value = %10f    Reduced cost = %10f" % (j, x[j], dj[j])
+            f.write("Column %d:   Value = %10f    Reduced cost = %10f" % (j, x[j], dj[j]) + "\n")
+
+        s = StringIO.StringIO()
+        sortby = 'cumulative'
+        ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+        ps.print_stats()
+        ps.dump_stats('result_profile')
+        print s.getvalue()
 
     def get_gamma_column(self, src, dst, kid, nid, qid):
         return src*self.V*self.K*self.N*self.Q + \
@@ -334,6 +351,7 @@ class ilp():
                         for quality_i in xrange(self.Q):
                             rows.append(row_offset + vms_i)
                             cols.append(self.get_gamma_column(vms_i, dst_i, content_i, path_i, quality_i))
+                            # vals.append(self.get_quality(quality_i) * (1-self.get_lambda(vms_i, content_i)))
                             vals.append(self.get_quality(quality_i))
             my_rhs.append(self.get_IO(vms_i))
             my_sense += "L"
@@ -348,7 +366,8 @@ class ilp():
                         for quality_i in xrange(self.Q):
                             rows.append(row_offset + vms_i)
                             cols.append(self.get_gamma_column(vms_i, dst_i, content_i, path_i, quality_i))
-                            vals.append(0.3*self.ct+0.7*self.cf)
+                            # vals.append((0.3*self.ct+0.7*self.cf) * (1-self.get_lambda(vms_i, content_i)))
+                            vals.append(1)
 
             for query_i in xrange(self.M):
                 for quality_i in xrange(self.Q):
@@ -358,7 +377,7 @@ class ilp():
                             val += self.get_delta(access_i, query_i, content_i)
                     rows.append(row_offset + vms_i)
                     cols.append(self.get_alpha_column(vms_i, query_i, quality_i))
-                    vals.append((0.3*self.ct + 0.7*self.cf) * val)
+                    vals.append(1)
             my_rhs.append(self.get_cloud(vms_i))
             my_sense += "L"
         row_offset += self.V
@@ -390,17 +409,14 @@ class ilp():
                 for content_i in xrange(self.K):
                     for path_i in xrange(self.N):
                         for quality_i in xrange(self.Q):
-                            my_obj[self.get_gamma_column(vms_i, dst_i, content_i, path_i, quality_i)] += self.wc * \
-                                                                                                         (self.ct*0.3 + self.cf*0.7)
+                            my_obj[self.get_gamma_column(vms_i, dst_i, content_i, path_i, quality_i)] += self.wc
             for query_i in xrange(self.M):
                 for quality_i in xrange(self.Q):
                     val = 0
                     for access_i in xrange(self.V):
                         for content_i in xrange(self.K):
                             val += self.get_delta(access_i, query_i, content_i)
-                    my_obj[self.get_alpha_column(vms_i, query_i, quality_i)] += self.wc * \
-                                                                                (self.ct*0.3 + self.cf*0.7) * \
-                                                                                val
+                    my_obj[self.get_alpha_column(vms_i, query_i, quality_i)] += self.wc
 
         # Upper bound of values
         my_ub = []
@@ -465,5 +481,6 @@ class ilp():
         """
         prob.variables.add(obj = my_obj,
                            ub = my_ub,
+                           lb = [0] * len(my_colnames),
                            names = my_colnames)
         prob.linear_constraints.set_coefficients(zip(rows, cols, vals))

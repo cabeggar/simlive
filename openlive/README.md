@@ -8,7 +8,7 @@ TODO:
 
 * solve constraint 17 problem
 * limit variable type to integer
-* add time counting
+* add time counting (X)
 * optimize get_beta
 * develop new visualization pattern
 * clean the code

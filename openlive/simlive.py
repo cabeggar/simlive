@@ -1,7 +1,9 @@
 from resource_simulator import generator
 import matplotlib.pyplot as plt
 import networkx as nx
+from networkx.readwrite import json_graph
 from ilp import ilp
+import json
 
 # Test part
 g = generator()
@@ -17,7 +19,12 @@ for node in g.topo.nodes():
 for u, v in g.topo.edges_iter():
     print g.topo.edge[u][v]
 
-lp = ilp(g.topo, 3, [10, 8, 6, 4], 0.5, 0, 0.5, 0.5)
+data = json_graph.node_link_data(g.topo)
+f = open("result_topo", "w+")
+f.write(json.dumps(data))
+f.close()
+
+lp = ilp(g.topo, 3, [10, 8, 6, 4], 1, 0, 1, 1)
 lp.solve()
 
 # Visualization part
