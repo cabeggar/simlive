@@ -178,7 +178,7 @@ class generator:
     def _assign_link_bandwidth(self, avg_link_bandwidth):
         # Assigning random link bandwidth
         for u, v in self.topo.edges_iter():
-            self.topo.edge[u][v]['bandwidth'] = random.uniform(0.5*avg_link_bandwidth, 1.5*avg_link_bandwidth)
+            self.topo.edge[u][v]['bandwidth'] = int(random.uniform(0.5*avg_link_bandwidth, 1.5*avg_link_bandwidth))
 
     def config_section_map(self, config, section):
         dict1 = {}

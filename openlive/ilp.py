@@ -77,15 +77,34 @@ class ilp():
         print "Solution value = ", my_prob.solution.get_objective_value()
         f.write("Solution value = " + str(my_prob.solution.get_objective_value()) + "\n")
         slack = my_prob.solution.get_linear_slacks()
-        pi = my_prob.solution.get_dual_values()
+        # pi = my_prob.solution.get_dual_values()
         x = my_prob.solution.get_values()
-        dj = my_prob.solution.get_reduced_costs()
+        # dj = my_prob.solution.get_reduced_costs()
+        """
         for i in range(numrows):
             print "Row %d:  Slack = %10f    Pi = %10f" % (i, slack[i], pi[i])
             f.write("Row %d:  Slack = %10f    Pi = %10f" % (i, slack[i], pi[i]) + "\n")
         for j in range(numcols):
             print "Column %d:   Value = %10f    Reduced cost = %10f" % (j, x[j], dj[j])
             f.write("Column %d:   Value = %10f    Reduced cost = %10f" % (j, x[j], dj[j]) + "\n")
+        """
+
+        for vms_i in xrange(self.V):
+            if x[vms_i] != 0 and self.get_cloud(vms_i) != 1:
+                print "VMS placed at node", vms_i, "(", x[vms_i], ")"
+        for src_i in xrange(self.V):
+            for dst_i in xrange(self.V):
+                for content_i in xrange(self.K):
+                    for path_i in xrange(self.N):
+                        for quality_i in xrange(self.Q):
+                            if x[self.get_gamma_column(src_i, dst_i, content_i, path_i, quality_i)] != 0:
+                                print "Content", content_i, "can be streamed from", src_i, "to", dst_i, "via path", path_i, "at quality", quality_i, "(", x[self.get_gamma_column(src_i, dst_i, content_i, path_i, quality_i)], ")"
+        for vms_i in xrange(self.V):
+            for query_i in xrange(self.M):
+                for quality_i in xrange(self.Q):
+                    if x[self.get_alpha_column(vms_i, content_i, quality_i)] != 0:
+                        print "Query no.", query_i, "can be served from", vms_i, "at quality", quality_i, "(", x[self.get_alpha_column(vms_i, content_i, quality_i)], ")"
+
 
         s = StringIO.StringIO()
         sortby = 'cumulative'
@@ -434,7 +453,7 @@ class ilp():
                                 my_ub.append(0)
                             else: my_ub.append(1)
         for vms_i in xrange(self.V):
-            for content_i in xrange(self.M):
+            for query_i in xrange(self.M):
                 for quality_i in xrange(self.Q):
                     if self.network.node[vms_i]['clouds'] != 0 or self.network.node[vms_i]['video_src'] != []:
                         my_ub.append(1)
@@ -473,7 +492,6 @@ class ilp():
         prob.linear_constraints.add(rhs = my_rhs,
                                     senses = my_sense,
                                     names = my_rownames)
-        """
         prob.variables.add(obj = my_obj,
                            ub = my_ub,
                            names = my_colnames,
@@ -483,4 +501,5 @@ class ilp():
                            ub = my_ub,
                            lb = [0] * len(my_colnames),
                            names = my_colnames)
+        """
         prob.linear_constraints.set_coefficients(zip(rows, cols, vals))
