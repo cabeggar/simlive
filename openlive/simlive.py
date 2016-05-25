@@ -3,10 +3,14 @@ import matplotlib.pyplot as plt
 import networkx as nx
 from networkx.readwrite import json_graph
 from ilp import ilp
+from cdn import cdn
 import json
+import os
 
 # Test part
 g = generator()
+if not os.path.exists('results'):
+    os.makedirs('results')
 """
 g._assign_src(5)
 g._assign_user(2, 20, 5)
@@ -26,6 +30,8 @@ f.close()
 
 lp = ilp(g.topo, 3, [10, 8, 6, 4], 1, 0, 1, 1)
 lp.solve()
+cdn = cdn(g.topo)
+cdn.solve()
 
 # Visualization part
 G = g.topo

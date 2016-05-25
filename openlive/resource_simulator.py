@@ -170,6 +170,7 @@ class generator:
             self.topo.node[cloud]['clouds'] = int(random.uniform(0.5*avg_comp_resource, 1.5*avg_comp_resource))
             self.topo.node[cloud]['IO'] = int(random.uniform(0.5*avg_IO_bandwidth, 1.5*avg_IO_bandwidth))
 
+        # Give basic IO and clouds to video resources
         for node in self.topo.nodes():
             if node not in clouds and self.topo.node[node]['video_src'] != []:
                 self.topo.node[node]['IO'] = 10

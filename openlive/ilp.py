@@ -100,7 +100,7 @@ class ilp():
         for vms_i in xrange(self.V):
             if x[vms_i] != 0 and self.get_cloud(vms_i) != 1:
                 print "VMS placed at node", vms_i, "(", x[vms_i], ")"
-                f.write("VMS placed at node" + str(vms_i) + "(" + str(x[vms_i]) + ")")
+                f.write("VMS placed at node" + str(vms_i) + " (" + str(x[vms_i]) + ")\n")
         for src_i in xrange(self.V):
             for dst_i in xrange(self.V):
                 for content_i in xrange(self.K):
@@ -110,17 +110,17 @@ class ilp():
                                 print "Content", content_i, "can be streamed from", src_i, "to", dst_i, "via path", path_i, \
                                         "at quality", quality_i, "(", x[self.get_gamma_column(src_i, dst_i, content_i, \
                                         path_i, quality_i)], ")"
-                                f.write("Content" + str(content_i) + "can be streamed from" + str(src_i) + "to" + \
-                                        str(dst_i) + "via path" + str(path_i) + "at quality" + str(quality_i) + "(" + \
-                                        str(x[self.get_gamma_column(src_i, dst_i, content_i, path_i, quality_i)]) + ")")
+                                f.write("Content " + str(content_i) + " can be streamed from " + str(src_i) + " to " + \
+                                        str(dst_i) + " via path " + str(path_i) + " at quality " + str(quality_i) + " (" + \
+                                        str(x[self.get_gamma_column(src_i, dst_i, content_i, path_i, quality_i)]) + ")\n")
         for vms_i in xrange(self.V):
             for query_i in xrange(self.M):
                 for quality_i in xrange(self.Q):
                     if x[self.get_alpha_column(vms_i, content_i, quality_i)] != 0:
                         print "Query no.", query_i, "can be served from", vms_i, "at quality", quality_i, "(", \
                                 x[self.get_alpha_column(vms_i, content_i, quality_i)], ")"
-                        f.write("Query no." + str(query_i) + "can be served from" + str(vms_i) + "at quality" + \
-                                str(quality_i) + "(" + str(x[self.get_alpha_column(vms_i, content_i, quality_i)]) + ")")
+                        f.write("Query no. " + str(query_i) + " can be served from " + str(vms_i) + " at quality " + \
+                                str(quality_i) + " (" + str(x[self.get_alpha_column(vms_i, content_i, quality_i)]) + ")\n")
         f.close()
 
         s = StringIO.StringIO()
