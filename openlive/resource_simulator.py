@@ -192,8 +192,9 @@ class generator:
                 print("exception on %s!" % option)
                 dict1[option] = None
         return dict1
-
-    def start_generator(self, config_file, sav_topo):
+    
+    # def start_generator(self, config_file, sav_topo):
+    def start_generator(self, config_file):
         config = ConfigParser.ConfigParser()
         config.read(config_file)
         # config.read("config.ini")
@@ -224,4 +225,4 @@ class generator:
         # f.close()
 
         # pickle
-        nx.write_gpickle(self.topo, sav_topo)
+        # nx.write_gpickle(self.topo, sav_topo)

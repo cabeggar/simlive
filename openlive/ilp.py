@@ -63,11 +63,11 @@ class ilp():
         numrows = my_prob.linear_constraints.get_num()
         numcols = my_prob.variables.get_num()
 
-        my_prob.write("ilp.lp")
+        my_prob.write("results/ilp.lp")
 
         print
 
-        f = open('result_lp', 'w+')
+        f = open('results/lp_result', 'w+')
         # solution.get_status() returns an integer code
         print "Solution status = ", my_prob.solution.get_status(), ":",
         f.write("Solution status = " + str(my_prob.solution.get_status()) + ":\n")
@@ -88,29 +88,46 @@ class ilp():
             print "Column %d:   Value = %10f    Reduced cost = %10f" % (j, x[j], dj[j])
             f.write("Column %d:   Value = %10f    Reduced cost = %10f" % (j, x[j], dj[j]) + "\n")
         """
+        for i in range(numrows):
+            # print "Row %d:  Slack = %10f" % (i, slack[i])
+            f.write("Row %d:  Slack = %10f" % (i, slack[i]) + "\n")
+        for j in range(numcols):
+            # print "Column %d:   Value = %10f" % (j, x[j])
+            f.write("Column %d:   Value = %10f" % (j, x[j]) + "\n")
+        f.close()
 
+        f = open('results/openlive', 'w+')
         for vms_i in xrange(self.V):
             if x[vms_i] != 0 and self.get_cloud(vms_i) != 1:
                 print "VMS placed at node", vms_i, "(", x[vms_i], ")"
+                f.write("VMS placed at node" + str(vms_i) + "(" + str(x[vms_i]) + ")")
         for src_i in xrange(self.V):
             for dst_i in xrange(self.V):
                 for content_i in xrange(self.K):
                     for path_i in xrange(self.N):
                         for quality_i in xrange(self.Q):
                             if x[self.get_gamma_column(src_i, dst_i, content_i, path_i, quality_i)] != 0:
-                                print "Content", content_i, "can be streamed from", src_i, "to", dst_i, "via path", path_i, "at quality", quality_i, "(", x[self.get_gamma_column(src_i, dst_i, content_i, path_i, quality_i)], ")"
+                                print "Content", content_i, "can be streamed from", src_i, "to", dst_i, "via path", path_i, \
+                                        "at quality", quality_i, "(", x[self.get_gamma_column(src_i, dst_i, content_i, \
+                                        path_i, quality_i)], ")"
+                                f.write("Content" + str(content_i) + "can be streamed from" + str(src_i) + "to" + \
+                                        str(dst_i) + "via path" + str(path_i) + "at quality" + str(quality_i) + "(" + \
+                                        str(x[self.get_gamma_column(src_i, dst_i, content_i, path_i, quality_i)]) + ")")
         for vms_i in xrange(self.V):
             for query_i in xrange(self.M):
                 for quality_i in xrange(self.Q):
                     if x[self.get_alpha_column(vms_i, content_i, quality_i)] != 0:
-                        print "Query no.", query_i, "can be served from", vms_i, "at quality", quality_i, "(", x[self.get_alpha_column(vms_i, content_i, quality_i)], ")"
-
+                        print "Query no.", query_i, "can be served from", vms_i, "at quality", quality_i, "(", \
+                                x[self.get_alpha_column(vms_i, content_i, quality_i)], ")"
+                        f.write("Query no." + str(query_i) + "can be served from" + str(vms_i) + "at quality" + \
+                                str(quality_i) + "(" + str(x[self.get_alpha_column(vms_i, content_i, quality_i)]) + ")")
+        f.close()
 
         s = StringIO.StringIO()
         sortby = 'cumulative'
         ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
         ps.print_stats()
-        ps.dump_stats('result_profile')
+        ps.dump_stats('results/profile')
         print s.getvalue()
 
     def get_gamma_column(self, src, dst, kid, nid, qid):

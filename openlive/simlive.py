@@ -13,14 +13,14 @@ g._assign_user(2, 20, 5)
 g._assign_cloud_resource(5, 10)
 g._assign_link_bandwidth(1000)
 """
-g.start_generator('config.ini', 'topo.gpickle')
+g.start_generator('config.ini')
 for node in g.topo.nodes():
     print g.topo.node[node]
 for u, v in g.topo.edges_iter():
     print g.topo.edge[u][v]
 
 data = json_graph.node_link_data(g.topo)
-f = open("result_topo.json", "w+")
+f = open("results/topo.json", "w+")
 f.write(json.dumps(data))
 f.close()
 
