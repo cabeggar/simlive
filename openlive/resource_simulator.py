@@ -101,10 +101,10 @@ class generator:
     def _assign_src(self, src_no):
         for i in xrange(src_no):
             node = random.randint(0, self.topo.number_of_nodes()-1)
-            print node
-            print self.topo.node[node]
+            # print node
+            # print self.topo.node[node]
             self.topo.node[node]['video_src'].append(i)
-            print self.topo.node[node]
+            # print self.topo.node[node]
 
     def _assign_user(self, block_no, user_no, src_no):
         # Find location of blocks
@@ -146,6 +146,32 @@ class generator:
         # Add userNo attr to graph
         self.topo.graph["userNo"] = user_no
 
+    def _assign_traffic(self, block_no, channels):
+        # Find location of blocks
+        if block_no == self.topo.number_of_nodes():
+            blocks = self.topo.nodes()
+        elif block_no > self.topo.number_of_nodes():
+            print "Block number exceeds node numbers"
+        else:
+            blocks = []
+            node0 = random.randint(0, self.topo.number_of_nodes()-1)
+            blocks.append(node0)
+            _paths = nx.single_source_shortest_path(self.topo, node0)
+            paths = []
+            for value in _paths.itervalues():
+                paths.append(value)
+            paths.sort(key = lambda path: len(path))
+            for i in xrange(block_no-1):
+                blocks.append(paths[-i-1][-1])
+
+        query_id = 0
+        for i, channel in enumerate(channels):
+            for j in xrange(channel['viewers']-1):
+                block = random.choice(blocks)
+                self.topo.node[block]['user_queries'][query_id] = i
+                query_id += 1
+
+        self.topo.graph["userNo"] = query_id
 
     def _assign_cloud_resource(self, cloud_no, avg_comp_resource, avg_IO_bandwidth):
         # Randomly pick some locations for clouds
@@ -173,8 +199,8 @@ class generator:
         # Give basic IO and clouds to video resources
         for node in self.topo.nodes():
             if node not in clouds and self.topo.node[node]['video_src'] != []:
-                self.topo.node[node]['IO'] = 10
-                self.topo.node[node]['clouds'] = 1
+                self.topo.node[node]['IO'] = 10*len(self.topo.node[node]['video_src'])
+                self.topo.node[node]['clouds'] = len(self.topo.node[node]['video_src'])
 
     def _assign_link_bandwidth(self, avg_link_bandwidth):
         # Assigning random link bandwidth
@@ -195,7 +221,7 @@ class generator:
         return dict1
     
     # def start_generator(self, config_file, sav_topo):
-    def start_generator(self, config_file):
+    def start_generator(self, config_file, traffic=None):
         config = ConfigParser.ConfigParser()
         config.read(config_file)
         # config.read("config.ini")
@@ -215,10 +241,20 @@ class generator:
         links = self.config_section_map(config, "LinkBandwidth")
         avg_link_bandwidth = int(links['averagelinkbandwidth'])
 
-        self._assign_src(src_no)
-        self._assign_user(block_no, user_no, src_no)
-        self._assign_cloud_resource(cloud_no, avg_comp_resource, avg_IO_bandwidth)
-        self._assign_link_bandwidth(avg_link_bandwidth)
+        if traffic == None:
+            self._assign_src(src_no)
+            self._assign_user(block_no, user_no, src_no)
+            self._assign_cloud_resource(cloud_no, avg_comp_resource, avg_IO_bandwidth)
+            self._assign_link_bandwidth(avg_link_bandwidth)
+        else:
+            f = open(traffic)
+            j = json.load(f)
+            self._assign_src(j['total_channel_amount'])
+            self._assign_traffic(block_no, j['data'])
+            print "Traffic successfully generated!"
+            self._assign_cloud_resource(cloud_no, avg_comp_resource, avg_IO_bandwidth)
+            self._assign_link_bandwidth(avg_link_bandwidth)
+
 
         # TODO save the topology with resoruce configured
         # f = open(sav_topo)

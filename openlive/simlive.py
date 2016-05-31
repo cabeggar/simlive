@@ -17,6 +17,7 @@ g._assign_user(2, 20, 5)
 g._assign_cloud_resource(5, 10)
 g._assign_link_bandwidth(1000)
 """
+# g.start_generator('config.ini', 'sample.json')
 g.start_generator('config.ini')
 for node in g.topo.nodes():
     print g.topo.node[node]
@@ -41,6 +42,7 @@ _values = [G.node[x]['clouds'] for x in G.nodes()]
 max_value = max(_values)
 values = [G.node[x]['clouds']/max_value for x in G.nodes()]
 
+"""
 # Draw nodes and edges
 pos = nx.spring_layout(G)
 nx.draw_networkx_nodes(G, pos, cmap=plt.get_cmap('jet'), node_color = values)
@@ -63,3 +65,4 @@ for key, val in pos.iteritems():
 nx.draw_networkx_labels(G, _pos, labels=labels)
 
 plt.show()
+"""

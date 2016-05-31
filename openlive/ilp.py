@@ -3,6 +3,8 @@ from cplex.exceptions import CplexError
 import networkx as nx
 from itertools import islice
 import cProfile, pstats, StringIO
+import numpy as np
+from collections import defaultdict
 
 class ilp():
     def __init__(self, G=nx.Graph(), n_paths=3, qualities=[10,8,6,4], ct=1, cf=0, wb=1, wc=1):
@@ -101,6 +103,8 @@ class ilp():
             if x[vms_i] != 0 and self.get_cloud(vms_i) != 1:
                 print "VMS placed at node", vms_i, "(", x[vms_i], ")"
                 f.write("VMS placed at node" + str(vms_i) + " (" + str(x[vms_i]) + ")\n")
+
+        IO_used, cloud_used = defaultdict(int), defaultdict(int)
         for src_i in xrange(self.V):
             for dst_i in xrange(self.V):
                 for content_i in xrange(self.K):
@@ -113,14 +117,71 @@ class ilp():
                                 f.write("Content " + str(content_i) + " can be streamed from " + str(src_i) + " to " + \
                                         str(dst_i) + " via path " + str(path_i) + " at quality " + str(quality_i) + " (" + \
                                         str(x[self.get_gamma_column(src_i, dst_i, content_i, path_i, quality_i)]) + ")\n")
+                                if self.network.node[src_i]['IO'] != 10*len(self.network.node[src_i]['video_src']) and \
+                                        self.network.node[src_i]['clouds'] != len(self.network.node[src_i]['video_src']) and \
+                                        src_i != dst_i:
+                                    IO_used[src_i] += quality_i
+                                    cloud_used[src_i] += 1
+        vms_2_user_hops = []
+        vms_per_cluster, cluster_per_vms = defaultdict(list), defaultdict(list)
         for vms_i in xrange(self.V):
             for query_i in xrange(self.M):
                 for quality_i in xrange(self.Q):
-                    if x[self.get_alpha_column(vms_i, content_i, quality_i)] != 0:
+                    if x[self.get_alpha_column(vms_i, query_i, quality_i)] != 0:
                         print "Query no.", query_i, "can be served from", vms_i, "at quality", quality_i, "(", \
-                                x[self.get_alpha_column(vms_i, content_i, quality_i)], ")"
+                                x[self.get_alpha_column(vms_i, query_i, quality_i)], ")"
                         f.write("Query no. " + str(query_i) + " can be served from " + str(vms_i) + " at quality " + \
-                                str(quality_i) + " (" + str(x[self.get_alpha_column(vms_i, content_i, quality_i)]) + ")\n")
+                                str(quality_i) + " (" + str(x[self.get_alpha_column(vms_i, query_i, quality_i)]) + ")\n")
+                        IO_used[vms_i] += quality_i
+                        cloud_used[vms_i] += 1
+                        for node in self.network.nodes():
+                            if query_i in self.network.node[node]['user_queries']:
+                                vms_2_user_hops.append(len(nx.shortest_path(self.network, source=node, target=vms_i)))
+                                if vms_i not in vms_per_cluster[node]: vms_per_cluster[node].append(vms_i)
+                                if node not in cluster_per_vms[vms_i]: cluster_per_vms[vms_i].append(node)
+        n_vms_per_cluster = [len(value) for value in vms_per_cluster.itervalues()]
+        n_cluster_per_vms = [len(value) for value in cluster_per_vms.itervalues()]
+        IO_utilization = [IO_used[vms]*1.0/self.network.node[vms]['IO'] for vms in IO_used.iterkeys()]
+        cloud_utilization = [cloud_used[vms]*1.0/self.network.node[vms]['clouds'] for vms in cloud_used.iterkeys()]
+        print "VMS to user hops min/avg/max/stddev =", min(vms_2_user_hops), "/", np.mean(vms_2_user_hops), "/", \
+                max(vms_2_user_hops), "/", np.std(vms_2_user_hops)
+        f.write("\n")
+        f.write("VMS to user hops min/avg/max/stddev = " + str(min(vms_2_user_hops)) + "/" + str(np.mean(vms_2_user_hops)) +
+                "/" + str(max(vms_2_user_hops)) + "/" + str(np.std(vms_2_user_hops)))
+        f.write("\n")
+        f.write(str(vms_2_user_hops))
+        print "Number of VMS connected per cluster min/avg/max/stddev =", min(n_vms_per_cluster), "/", \
+                np.mean(n_vms_per_cluster), "/", max(n_vms_per_cluster), "/", np.std(n_vms_per_cluster)
+        f.write("\n")
+        f.write("Number of VMS connected per cluster min/avg/max/stddev = " + str(min(n_vms_per_cluster)) + "/" +
+                str(np.mean(n_vms_per_cluster)) + "/" + str(max(n_vms_per_cluster)) + "/" + str(np.std(n_vms_per_cluster)))
+        f.write("\n")
+        f.write(str(n_vms_per_cluster))
+        print "Number of clusters connected per VMS min/avg/max/stddev =", min(n_cluster_per_vms), "/", \
+                np.mean(n_cluster_per_vms), "/", max(n_cluster_per_vms), "/", np.std(n_cluster_per_vms)
+        f.write("\n")
+        f.write("Number of clusters connected per VMS min/avg/max/stddev = " + str(min(n_cluster_per_vms)) + "/" +
+                str(np.mean(n_cluster_per_vms)) + "/" + str(max(n_cluster_per_vms)) + "/" + str(np.std(n_cluster_per_vms)))
+        f.write("\n")
+        f.write(str(n_cluster_per_vms))
+        print "IO utilization of VMS min/avg/max/stddev/sum =", min(IO_utilization), "/", np.mean(IO_utilization), "/", \
+                max(IO_utilization), "/", np.std(IO_utilization), "/", sum(IO_utilization)
+        f.write("\n")
+        f.write("IO utilization of VMS min/avg/max/stddev/sum = " + str(min(IO_utilization)) + "/" +
+                str(np.mean(IO_utilization)) + "/" + str(max(IO_utilization)) + "/" + str(np.std(IO_utilization)) + "/" +
+                str(sum(IO_utilization)))
+        f.write("\n")
+        f.write(str(IO_utilization))
+        print "Clouds utilization of VMS min/avg/max/stddev/sum =", min(cloud_utilization), "/", np.mean(cloud_utilization), \
+                "/", max(cloud_utilization), "/", np.std(cloud_utilization), "/", sum(cloud_utilization)
+        f.write("\n")
+        f.write("Clouds utilization of VMS min/avg/max/stddev = " + str(min(cloud_utilization)) + "/" +
+                str(np.mean(cloud_utilization)) + "/" + str(max(cloud_utilization)) + "/" + str(np.std(cloud_utilization)) +
+                "/" + str(sum(cloud_utilization)))
+        f.write("\n")
+        f.write(str(cloud_utilization))
+        f.write("\n")
+        f.write(str(len(cloud_utilization)) + " VMS used")
         f.close()
 
         s = StringIO.StringIO()
@@ -186,7 +247,8 @@ class ilp():
         my_sense = ""
         row_offset = 0
         # populate row by row
-       
+      
+        print row_offset, "constraints populated. Starting to populate constraint 1"
         # constr. 1
         # Each query only get resource from a single VMS at a single quality
         for demand_i in range(self.M):
@@ -202,6 +264,7 @@ class ilp():
             my_sense += "E"
         row_offset += self.M
 
+        print row_offset, "constraints populated. Starting to populate constraint 3"
         # constr. 3
         # A user can access content stream at quality no higher than that is available at the VMS
         for demand_i in xrange(self.M):
@@ -226,6 +289,8 @@ class ilp():
                     my_sense += "L"
         row_offset += self.M*self.K*self.V
 
+
+        print row_offset, "constraints populated. Starting to populate constraint 4"
         # constr. 4
         # Average quality should be no smaller than a predefined rate
         for vms_i in xrange(self.V):
@@ -238,6 +303,7 @@ class ilp():
         my_sense += "G"
         row_offset += 1
 
+        print row_offset, "constraints populated. Starting to populate constraint 5"
         # constr. 5
         focus_gamma = []
         for content_i in xrange(self.K):
@@ -258,6 +324,7 @@ class ilp():
                     my_sense += "G"
         row_offset += self.K * self.V
 
+        print row_offset, "constraints populated. Starting to populate constraint 8"
         # constr. 8
         for dst_i in xrange(self.V):
             for content_i in xrange(self.K):
@@ -275,6 +342,7 @@ class ilp():
                 my_sense += "L"
         row_offset += self.V * self.K
         
+        print row_offset, "constraints populated. Starting to populate constraint 9"
         # constr. 9
         # The stream can be only relayed with the same quality, or be transcoded from higher quality to lower quality
         for src_i in xrange(self.V):
@@ -301,6 +369,7 @@ class ilp():
                     my_sense += "L"
         row_offset += self.V*self.V*self.K
 
+        print row_offset, "constraints populated. Starting to populate constraint 10"
         # constr. 10
         # Live contents can be streamed to a node with VMS placed
         for vms_i in xrange(self.V):
@@ -319,6 +388,7 @@ class ilp():
                 my_sense += "L"
         row_offset += self.V*self.K
 
+        print row_offset, "constraints populated. Starting to populate constraint 12"
         # constr. 12
         # Link bandwidth constraint
         for link_i in xrange(self.E):
@@ -351,6 +421,7 @@ class ilp():
             my_sense += "L"
         row_offset += self.E
 
+        print row_offset, "constraints populated. Starting to populate constraint 13"
         # constr. 13
         # Ingress bandwidth contributed by the deliver tree
         for vms_i in xrange(self.V):
@@ -367,6 +438,7 @@ class ilp():
             my_sense += "L"
         row_offset += self.V
 
+        print row_offset, "constraints populated. Starting to populate constraint 14"
         # constr. 14
         # Egress bandwidth utilization contributed by bothe the delivery tree and the user access
         for vms_i in xrange(self.V):
@@ -393,6 +465,7 @@ class ilp():
             my_sense += "L"
         row_offset += self.V
 
+        print row_offset, "constraints populated. Starting to populate constraint 17"
         # constr. 17
         for vms_i in xrange(self.V):
 
