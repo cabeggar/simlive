@@ -105,6 +105,7 @@ class ilp():
                 f.write("VMS placed at node" + str(vms_i) + " (" + str(x[vms_i]) + ")\n")
 
         IO_used, cloud_used = defaultdict(int), defaultdict(int)
+        delivery_tree = [[0] * self.V for _ in xrange(self.V)]
         for src_i in xrange(self.V):
             for dst_i in xrange(self.V):
                 for content_i in xrange(self.K):
@@ -117,13 +118,19 @@ class ilp():
                                 f.write("Content " + str(content_i) + " can be streamed from " + str(src_i) + " to " + \
                                         str(dst_i) + " via path " + str(path_i) + " at quality " + str(quality_i) + " (" + \
                                         str(x[self.get_gamma_column(src_i, dst_i, content_i, path_i, quality_i)]) + ")\n")
+                                if src_i != dst_i:
+                                    path = self.paths[src_i][dst_i][path_i]
+                                    for i in xrange(len(path)-1):
+                                        u, v = path[i], path[i+1]
+                                        delivery_tree[u][v] += self.qualities[quality_i]
                                 if self.network.node[src_i]['IO'] != 10*len(self.network.node[src_i]['video_src']) and \
                                         self.network.node[src_i]['clouds'] != len(self.network.node[src_i]['video_src']) and \
                                         src_i != dst_i:
-                                    IO_used[src_i] += quality_i
+                                    IO_used[src_i] += self.qualities[quality_i]
                                     cloud_used[src_i] += 1
         vms_2_user_hops = []
         vms_per_cluster, cluster_per_vms = defaultdict(list), defaultdict(list)
+        access_traffic = [[0] * self.V for _ in xrange(self.V)]
         for vms_i in xrange(self.V):
             for query_i in xrange(self.M):
                 for quality_i in xrange(self.Q):
@@ -132,13 +139,35 @@ class ilp():
                                 x[self.get_alpha_column(vms_i, query_i, quality_i)], ")"
                         f.write("Query no. " + str(query_i) + " can be served from " + str(vms_i) + " at quality " + \
                                 str(quality_i) + " (" + str(x[self.get_alpha_column(vms_i, query_i, quality_i)]) + ")\n")
-                        IO_used[vms_i] += quality_i
+                        IO_used[vms_i] += self.qualities[quality_i]
                         cloud_used[vms_i] += 1
                         for node in self.network.nodes():
                             if query_i in self.network.node[node]['user_queries']:
-                                vms_2_user_hops.append(len(nx.shortest_path(self.network, source=node, target=vms_i)))
+                                vms_2_user_hops.append(len(self.paths[vms_i][node][0]) if self.paths[vms_i][node] else 0)
                                 if vms_i not in vms_per_cluster[node]: vms_per_cluster[node].append(vms_i)
                                 if node not in cluster_per_vms[vms_i]: cluster_per_vms[vms_i].append(node)
+                                if node != vms_i:
+                                    path = self.paths[vms_i][node][0]
+                                    for i in xrange(len(path)-1):
+                                        access_traffic[path[i]][path[i+1]] += self.qualities[quality_i]
+        overall_traffic = [[0] * self.V for _ in xrange(self.V)]
+        for i in xrange(self.V):
+            for j in xrange(self.V):
+                overall_traffic[i][j] = delivery_tree[i][j] + access_traffic[i][j]
+        delivery_tree_util, access_traffic_util, overall_traffic_util = [], [], []
+        for u, v in self.network.edges_iter():
+            if delivery_tree[u][v] != 0:
+                delivery_tree_util.append(delivery_tree[u][v] * 1.0 / self.network.edge[u][v]['bandwidth'])
+            if delivery_tree[v][u] != 0:
+                delivery_tree_util.append(delivery_tree[v][u] * 1.0 / self.network.edge[v][u]['bandwidth'])
+            if access_traffic[u][v] != 0:
+                access_traffic_util.append(access_traffic[u][v] * 1.0 / self.network.edge[u][v]['bandwidth'])
+            if access_traffic[v][u] != 0:
+                access_traffic_util.append(access_traffic[v][u] * 1.0 / self.network.edge[v][u]['bandwidth'])
+            if overall_traffic[u][v] != 0:
+                overall_traffic_util.append(overall_traffic[u][v] * 1.0 / self.network.edge[u][v]['bandwidth'])
+            if overall_traffic[v][u] != 0:
+                overall_traffic_util.append(overall_traffic[v][u] * 1.0 / self.network.edge[v][u]['bandwidth'])
         n_vms_per_cluster = [len(value) for value in vms_per_cluster.itervalues()]
         n_cluster_per_vms = [len(value) for value in cluster_per_vms.itervalues()]
         IO_utilization = [IO_used[vms]*1.0/self.network.node[vms]['IO'] for vms in IO_used.iterkeys()]
@@ -175,13 +204,46 @@ class ilp():
         print "Clouds utilization of VMS min/avg/max/stddev/sum =", min(cloud_utilization), "/", np.mean(cloud_utilization), \
                 "/", max(cloud_utilization), "/", np.std(cloud_utilization), "/", sum(cloud_utilization)
         f.write("\n")
-        f.write("Clouds utilization of VMS min/avg/max/stddev = " + str(min(cloud_utilization)) + "/" +
+        f.write("Clouds utilization of VMS min/avg/max/stddev/sum = " + str(min(cloud_utilization)) + "/" +
                 str(np.mean(cloud_utilization)) + "/" + str(max(cloud_utilization)) + "/" + str(np.std(cloud_utilization)) +
                 "/" + str(sum(cloud_utilization)))
         f.write("\n")
         f.write(str(cloud_utilization))
         f.write("\n")
         f.write(str(len(cloud_utilization)) + " VMS used")
+        print "Delivery tree link utilization min/avg/max/stddev/sum =", min(delivery_tree_util), "/", \
+                np.mean(delivery_tree_util), "/", max(delivery_tree_util), "/", np.std(delivery_tree_util), "/", \
+                sum(delivery_tree_util)
+        f.write("\n")
+        f.write("Delivery tree link utilization min/avg/max/stddev/sum = " + str(min(delivery_tree_util)) + "/" +
+                str(np.mean(delivery_tree_util)) + "/" + str(max(delivery_tree_util)) + "/" +
+                str(np.std(delivery_tree_util)) + "/" + str(sum(delivery_tree_util)))
+        f.write("\n")
+        f.write(str(delivery_tree_util))
+        f.write("\n")
+        f.write(str(len(delivery_tree_util)) + " links used for delivery tree")
+        print "Access traffic link utilization min/avg/max/stddev/sum =", min(access_traffic_util), "/", \
+                np.mean(access_traffic_util), "/", max(access_traffic_util), "/", np.std(access_traffic_util), "/", \
+                sum(access_traffic_util)
+        f.write("\n")
+        f.write("Access traffic link utilization min/avg/max/stddev/sum = " + str(min(access_traffic_util)) + "/" +
+                str(np.mean(access_traffic_util)) + "/" + str(max(access_traffic_util)) + "/" + 
+                str(np.std(access_traffic_util)) + "/" + str(sum(access_traffic_util)))
+        f.write("\n")
+        f.write(str(access_traffic_util))
+        f.write("\n")
+        f.write(str(len(access_traffic_util)) + " links used for access traffic")
+        print "Overall traffic link utilization min/avg/max/stddev/sum =", min(overall_traffic_util), "/", \
+                np.mean(overall_traffic_util), "/", max(overall_traffic_util), "/", np.std(overall_traffic_util), "/", \
+                sum(overall_traffic_util)
+        f.write("\n")
+        f.write("Overall traffic link utilization min/avg/max/stddev/sum = " + str(min(overall_traffic_util)) + "/" +
+                str(np.mean(overall_traffic_util)) + "/" + str(max(overall_traffic_util)) + "/" +
+                str(np.std(overall_traffic_util)) + "/" + str(sum(overall_traffic_util)))
+        f.write("\n")
+        f.write(str(overall_traffic_util))
+        f.write("\n")
+        f.write(str(len(overall_traffic_util)) + " links used for overall traffic")
         f.close()
 
         s = StringIO.StringIO()
@@ -299,7 +361,7 @@ class ilp():
                     rows.append(row_offset)
                     cols.append(self.get_alpha_column(vms_i, query_i, quality_i))
                     vals.append(self.get_quality(quality_i))
-        my_rhs.append(self.qualities[-1]*self.M)
+        my_rhs.append(self.qualities[0]*self.M)
         my_sense += "G"
         row_offset += 1
 
