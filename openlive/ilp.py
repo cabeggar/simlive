@@ -369,7 +369,6 @@ class ilp():
         print row_offset, "constraints populated. Starting to populate constraint 3"
         # constr. 3
         # A user can access content stream at quality no higher than that is available at the VMS
-        t0 = time.clock()
         for demand_i in xrange(self.M):
             for video_i in xrange(self.K):
                 val = reduce(lambda x, y: x+y, [self.get_delta(access_i, demand_i, video_i) for access_i in xrange(self.V)])
@@ -388,7 +387,6 @@ class ilp():
                                 vals.append(-self.get_quality(quality_i))
                     my_rhs.append(0)
                     my_sense += "L"
-        print time.clock()-t0
         row_offset += self.M*self.K*self.V
 
         print row_offset, "constraints populated. Starting to populate constraint 4"
