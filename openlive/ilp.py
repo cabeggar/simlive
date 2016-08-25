@@ -5,6 +5,8 @@ from itertools import islice
 import cProfile, pstats, StringIO
 import numpy as np
 from collections import defaultdict
+from multiprocessing import Pool, Process
+import time
 
 class ilp():
     def __init__(self, G=nx.Graph(), n_paths=3, qualities=[10,8,6,4], ct=1, cf=0, wb=1, wc=1):
@@ -301,6 +303,11 @@ class ilp():
         else:
             return 0
 
+    def append_nonzero_values(self, row, col, val, rows, cols, vals):
+        rows.append(row)
+        cols.append(col)
+        vals.append(val)
+
     def populate_constraints(self, prob):
         rows = []
         cols = []
@@ -325,15 +332,47 @@ class ilp():
             my_rhs.append(1)
             my_sense += "E"
         row_offset += self.M
-
+        
+        """
         print row_offset, "constraints populated. Starting to populate constraint 3"
         # constr. 3
         # A user can access content stream at quality no higher than that is available at the VMS
+        t0 = time.clock()
+        jobs = []
         for demand_i in xrange(self.M):
             for video_i in xrange(self.K):
-                val = 0
-                for access_i in xrange(self.V):
-                    val += self.get_delta(access_i, demand_i, video_i)
+                val = reduce(lambda x, y: x+y, [self.get_delta(access_i, demand_i, video_i) for access_i in xrange(self.V)])
+                for vms_i in xrange(self.V):
+                    for quality_i in xrange(self.Q): 
+                        p = Process(target=self.append_nonzero_values, args=(
+                                    row_offset + demand_i*self.K*self.V + video_i*self.V + vms_i,
+                                    self.get_alpha_column(vms_i, demand_i, quality_i),
+                                    val*self.get_quality(quality_i),
+                                    rows, cols, vals))
+                        jobs.append(p)
+                        p.start()
+                    # constr. 2
+                    # Intermediate variable which calculates the available highest stream quality at VMS
+                    for quality_i in xrange(self.Q):
+                        for src_i in xrange(self.V):
+                            for path_i in xrange(self.N):
+                                rows.append(row_offset + demand_i*self.K*self.V + video_i*self.V + vms_i)
+                                cols.append(self.get_gamma_column(src_i, vms_i, video_i, path_i, quality_i))
+                                vals.append(-self.get_quality(quality_i))
+                    my_rhs.append(0)
+                    my_sense += "L"
+        for job in jobs:
+            job.join()
+        print time.clock() - t0
+        row_offset += self.M*self.K*self.V
+        """
+        print row_offset, "constraints populated. Starting to populate constraint 3"
+        # constr. 3
+        # A user can access content stream at quality no higher than that is available at the VMS
+        t0 = time.clock()
+        for demand_i in xrange(self.M):
+            for video_i in xrange(self.K):
+                val = reduce(lambda x, y: x+y, [self.get_delta(access_i, demand_i, video_i) for access_i in xrange(self.V)])
                 for vms_i in xrange(self.V):
                     for quality_i in xrange(self.Q):
                         rows.append(row_offset + demand_i*self.K*self.V + video_i*self.V + vms_i)
@@ -349,8 +388,8 @@ class ilp():
                                 vals.append(-self.get_quality(quality_i))
                     my_rhs.append(0)
                     my_sense += "L"
+        print time.clock()-t0
         row_offset += self.M*self.K*self.V
-
 
         print row_offset, "constraints populated. Starting to populate constraint 4"
         # constr. 4
