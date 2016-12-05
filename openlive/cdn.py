@@ -33,7 +33,7 @@ class cdn():
                 cluster_per_server[choice] += 1
                 IO_used[choice] += 10 * len(self.network.node[node]['user_queries'])
                 cloud_used[choice] += len(self.network.node[node]['user_queries'])
-                print path
+                print "Path to serve cluster " + str(path[-1]) + ": " + str(path)
                 if node != choice:
                     for i in xrange(len(path)-1):
                         access_traffic[path[i]][path[i+1]] += 10 * len(self.network.node[node]['user_queries'])
