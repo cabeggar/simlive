@@ -1,7 +1,0 @@
-results/
-.gitignore
-*.swp
-*.swo
-.idea/
-*.pyc
-.DS_Store
