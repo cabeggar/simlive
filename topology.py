@@ -4,7 +4,6 @@ import json
 class Topology(object):
     def __init__(self, topo_json):
         G = nx.Graph()
-
         # Read graph from json
         G.add_nodes_from(range(topo_json['number_of_nodes']))
         for i, (u, v, bandwidth) in enumerate(topo_json['edge_list']):

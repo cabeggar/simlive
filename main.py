@@ -19,3 +19,15 @@ if __name__ == "__main__":
             trace = Trace('trace/' + str(i), topology.topo.number_of_nodes())
             requests = trace.requests
             channels = trace.channels
+
+            """
+            TODO: System
+            * add new channel
+            * remove leaving channel
+            * assign access point
+            * append deliver tree
+            * compute link and QoE cost, link and access utilization
+            * access control (ap control and delivery tree control, record deny rate)
+            """
+
+            # Measurement
