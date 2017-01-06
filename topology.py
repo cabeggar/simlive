@@ -12,7 +12,7 @@ class Topology(object):
             G.node[int(node)]['server'] = topo_json['servers'][node]
         self.topo = G
 
-        # Compute minimum spanning tree
+        # Compute shortest paths
         number_of_nodes = G.number_of_nodes()
         self.routing = [[[] for _ in xrange(number_of_nodes)] for _ in xrange(number_of_nodes)]
         for i in xrange(number_of_nodes):
