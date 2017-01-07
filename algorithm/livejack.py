@@ -18,7 +18,7 @@ class LiveJack(object):
         channel_cnt = 0
 
         for channel_id in self.channel:
-            channel_map[channel_cnt] = channel_id
+            self.channel_map[channel_cnt] = channel_id
             channels[channel_cnt] = channels[channel_id]
             channel_cnt = channel_cnt + 1
 
@@ -73,7 +73,7 @@ class LiveJack(object):
 
             row_offset = row_offset + 1
 
-        my_sense = my_sense + "E" * len(channels)
+        my_sense = my_sense + "E" * len(self.channels)
 
         # delivery site constraint
         for src in range(self.node_number):
@@ -130,9 +130,9 @@ class LiveJack(object):
         for src in range(len(self.node_number)):
             for dst in range(len(self.node_number)):
                 for channel_idx in range(len(self.node_number)):
-                    my_obj.append(channels[channel_idx]['bw'])
+                    my_obj.append(self.channels[channel_idx]['bw'])
 
-        my_sense = my_sense + "L" * len(G.number_of_edges())
+        my_sense = my_sense + "L" * len(self.G.number_of_edges())
 
         prob.linear_constraints.add(rhs=my_rhs, senses=my_sense)
 
@@ -146,5 +146,5 @@ class LiveJack(object):
 
 
     def assign_vmf(self):
-
         # out put sites
+        pass

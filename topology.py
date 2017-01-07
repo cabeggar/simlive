@@ -7,7 +7,7 @@ class Topology(object):
         # Read graph from json
         G.add_nodes_from(range(topo_json['number_of_nodes']))
         for i, (u, v, bandwidth, cost) in enumerate(topo_json['edge_list']):
-            G.add_edge(u, v, id = i, bandwidth = bandwidth, weight = 1)
+            G.add_edge(u, v, id = i, bandwidth = bandwidth, capacity = bandwidth)
         for node in topo_json['servers']:
             G.node[int(node)]['server'] = topo_json['servers'][node]
         self.topo = G
