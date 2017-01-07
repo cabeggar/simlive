@@ -6,6 +6,6 @@ class System(object):
 
         # [channel_id -> {server_id -> probability}]
         self.access_point = [{} for _ in xrange(topology.topo.number_of_nodes())]
-        # [channel_id -> {server_id -> number of viewers}]
+        # [channel_id -> number of viewers]
         self.viewers = [{} for _ in xrange(topology.topo.number_of_nodes)]
         self.delivery_tree = {}  # target -> {source -> channel_id_array}
