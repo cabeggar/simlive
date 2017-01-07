@@ -1,7 +1,9 @@
 class System(object):
-    def __init__(self, topology, trace):
-        self.topology = topology.topo
-        self.placement = {} # server_id -> node
-        self.channel_sources = {} # channel_id -> node
-        self.access_point = [{} for _ in xrange(topology.topo.number_of_nodes())] # [channel_id -> {server_id -> probability}]
-        self.delivery_tree = {} # target -> {source -> channel_id_array}
+    def __init__(self, topology):
+        self.topology = topology
+        self.placement = {}  # server_id -> node
+        self.channel_sources = {}  # channel_id -> {'sites'->[node], 'bw'->val}
+
+        # [channel_id -> {server_id -> probability}]
+        self.access_point = [{} for _ in xrange(topology.topo.number_of_nodes())] * topology.topo.number_of_nodes()
+        self.delivery_tree = {}  # target -> {source -> channel_id_array}
