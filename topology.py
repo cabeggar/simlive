@@ -6,7 +6,7 @@ class Topology(object):
         G = nx.Graph()
         # Read graph from json
         G.add_nodes_from(range(topo_json['number_of_nodes']))
-        for i, (u, v, bandwidth) in enumerate(topo_json['edge_list']):
+        for i, (u, v, bandwidth, cost) in enumerate(topo_json['edge_list']):
             G.add_edge(u, v, id = i, bandwidth = bandwidth, weight = 1)
         for node in topo_json['servers']:
             G.node[int(node)]['server'] = topo_json['servers'][node]
@@ -21,8 +21,14 @@ class Topology(object):
                 if j == i: continue
                 self.routing[i][j] = paths[j]
 
+    def get_nearest_server(self, pos):
+        server_hop = [(node, len(self.routing[pos])[node])
+                      for node in self.topo.nodes()
+                      if "server" in self.topo.node[node] and self.topo.node[node] != 0]
+        return min(server_hop, key=lambda x: x[1])[0]
+
 if __name__ == "__main__":
-    with open('sample_topo.json') as sample_topo:
+    with open('topo/nsfnet.json') as sample_topo:
         data = json.load(sample_topo)
         topology = Topology(data)
         for node in topology.topo.nodes():

@@ -2,9 +2,11 @@
 from topology import Topology
 import json
 from trace import Trace
+from system import System
+from multicast import Multicast
 
 if __name__ == "__main__":
-    with open('sample_topo.json') as sample_topo:
+    with open('topo/nsfnet.json') as sample_topo:
         data = json.load(sample_topo)
         topology = Topology(data)
         for node in topology.topo.nodes():
@@ -17,8 +19,9 @@ if __name__ == "__main__":
         while True:
             # Read crawled data
             trace = Trace('trace/' + str(i), topology.topo.number_of_nodes())
-            requests = trace.requests
-            channels = trace.channels
+            system = System(topology)
+            algo = Multicast(topology, trace, system)
+
 
             """
             TODO: System
