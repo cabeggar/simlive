@@ -29,7 +29,7 @@ class Multicast(object):
                     links = []
                     path = self.topology.routing[u][v]
                     for k in xrange(1, len(path)):
-                        links.append(self.topology.topo[path[k-1]][path[k]]['bandwidth'])
+                        links.append(self.topology.topo[path[k-1]][path[k]]['capacity'])
                     G.add_edge(u, v, capacity=min(links))
 
             T = nx.minimum_spanning_tree(G)

@@ -4,6 +4,7 @@ import json
 from trace import Trace
 from system import System
 from collections import defaultdict
+from multicast import Multicast
 
 def remove_channel(channel_to_remove, topology, trace, system):
     for target, source_channel in system.delivery_tree.iteritems():
@@ -37,17 +38,40 @@ def recalculate_access_traffic(channel, node_id, system, topology, viewer_number
             topology.topo.edge[u][v]['capacity'] += int(100 * viewer_number * probability)
 
 
-def get_request_delta(topology, trace, system):
-    request_delta = defaultdict(defaultdict(int))
+def remove_user(topology, trace, system):
     for channel, request in trace.requests.iteritems():
         for i in xrange(topology.topo.number_of_nodes):
-            if request[i] > system[i][channel]:
-                request_delta[channel][i] = request[i] - system[i][channel]
-            elif request[i] < system[i][channel]:
+            if request[i] < system[i][channel]:
                 # TODO: deal with non int diff on each server
                 diff = system[i][channel] - request[i]
                 recalculate_access_traffic(channel, i, system, topology, diff)
-    return request_delta
+
+def update_network_status(topology, trace, system, access_point, delivery_tree):
+    for pos in access_point:
+        for channel, ap in access_point[pos].iteritems():
+            viewer_number = trace.requests[channel][pos]
+            for server, probability in ap.iteritems():
+                # TODO: set qoe value, fix over-minus bug
+                topology.topo.node[server]['qoe'] -= int(1 * viewer_number * probability)
+                links = []
+                path = topology.routing[pos][server]
+                for k in xrange(1, len(path)):
+                    links.append((path[k-1], path[k]))
+                for u, v in links:
+                    # TODO: set capacity value, fix over-minus bug
+                    topology.topo.edge[u][v]['capacity'] -= int(100 * viewer_number * probability)
+
+    for target, source_channel in delivery_tree.iteritems():
+        for source, channel in source_channel.iteritems():
+            # TODO: set capacity value, fix over-minus bug
+            topology.topo.node[source]['qoe'] -= 1
+            links = []
+            path = topology.routing[source][target]
+            for k in xrange(1, len(path)):
+                links.append((path[k-1], path[k]))
+            for u, v in links:
+                # TODO: set capacity value, fix over-minus bug
+                topology.topo.edge[u][v]['capacity'] -= 100
 
 
 if __name__ == "__main__":
@@ -80,6 +104,12 @@ if __name__ == "__main__":
             for channel in system.channels:
                 if channel not in trace.channels:
                     remove_channel(channel, topology, trace, system)
+            remove_user(topology, trace, system)
+            algo = Multicast(topology, trace, system)
+            access_points = algo.access_point
+            delivery_tree = algo.delivery_tree
+
+            update_network_status(topology, trace, system, access_points, delivery_tree)
 
             # Algorithm
 
