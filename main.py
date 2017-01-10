@@ -141,6 +141,7 @@ if __name__ == "__main__":
                 if channel not in trace.channels:
                     remove_channel(channel, topology, trace, system)
 
+            # Remove users based on access probabilities
             remove_user(topology, trace, system)
 
             # Add new channels
@@ -149,5 +150,7 @@ if __name__ == "__main__":
                     system.channels[channel]['src'] = src
 
             algo = Multicast(topology, trace, system)
+            # Compute deliver tree and access points for current trace. The results should be stored in system
             algo = algo.compute()
+            # Update network status based on updated system
             failed_access, failed_deliver = update_network_status(topology, trace, system)
