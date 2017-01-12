@@ -148,7 +148,7 @@ class LiveJack(object):
                 for channel_idx in range(len(self.node_number)):
                     my_obj.append(self.channels[channel_idx]['bw'])
 
-        my_sense = my_sense + "L" * self.node_number
+        my_sense = my_sense + "L" * len(self.G.number_of_edges())
 
         prob.linear_constraints.add(rhs=my_rhs, senses=my_sense)
 
@@ -183,3 +183,6 @@ class LiveJack(object):
                 channel_id = self.channel_map[channel_idx]
 
                 self.local_viewer_map[loc][channel_id] = min_site
+    def assign_vmf(self):
+        # out put sites
+        pass
