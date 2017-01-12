@@ -9,7 +9,7 @@ class LiveJack(object):
         self.node_number = self.G.number_of_nodes()
 
         # transfer id based channel to map
-        # [{'sites'->[nodes], 'bw'->float, 'src'->node}]
+        # [{'sites'->{nodes}, 'bw'->float, 'src'->node}]
         self.channels = [None] * len(channels)
         self.channel_map = [None] * len(channels)
 
@@ -37,6 +37,26 @@ class LiveJack(object):
         return [var_id / (self.node_number * self.node_number),
                 var_id % (self.node_number * self.node_number)/self.node_number,
                 var_id % (self.node_number)]
+
+    def __serial_vmf_assign__(self, channel_id, site_id=None,
+                              viewer_id=None):
+        if viewer_id is None:
+            return len(self.channels) + self.node_number * self.node_number + \
+               channel_id * self.node_number + site_id
+        else:
+            return channel_id * self.node_number + site_id
+
+    def __deserial_vmf_assign__(self, var_id, is_assign=True):
+        if is_assign:
+            return [var_id / (self.node_number * self.node_number),
+                    var_id % (self.node_number * self.node_number) /
+                    self.node_number,
+                    var_id % (self.node_number)]
+        else:
+            var_id = var_id - self.node_number * self.node_number *\
+                len(self.channels)
+            return [var_id / self.node_number,
+                    var_id % self.node_number]
 
     def __cal_route__(self, routing):
         for (link_src, link_dst) in self.G.edges():
@@ -162,6 +182,48 @@ class LiveJack(object):
 
     def assign_sites(self):
         # based on unassigned requests, and existing sites, calculate sites
+        prob = cplex.Cplex()
+
+        prob.objective.set_sense(prob.objective.sense.minimize)
+
+        rows = []
+        cols = []
+        vals = []
+        my_rhs = []
+        row_offset = 0
+
+        my_ub = [1] * (len(self.channels) * len(self.node_number) * \
+                       len(self.node_number),
+                       len(self.channels) * len(self.node_number))
+        my_lb = [0] * (len(self.channels) * len(self.node_number) * \
+                       len(self.node_number),
+                       len(self.channels) * len(self.node_number))
+        my_ctype = "I" * (len(self.channels) * self.node_number *
+                          self.node_number + len(self.channels) *
+                          self.node_number)
+
+        # constraints on vmf modifications
+        for channel_idx in range(len(self.channels)):
+            rhs_channel = 0
+
+            for site in range(self.node_number):
+                rows.append(row_offset)
+                cols.append(self.__serial_vmf_assign__(channel_idx,
+                                                       site))
+
+                if site in self.channels[channel_idx]['sites']:
+                    vals.append(-1)
+                    rhs_channel = rhs_channel - 1
+                else:
+                    vals.append(1)
+                    rhs_channel = rhs_channel + 1
+
+            my_rhs.append(rhs_channel)
+            row_offset = row_offset + 1
+
+        # constraints on aggregate bandwidth
+
+
 
         # based on sites, calculate local decision
         for channel_idx in range(len(self.channels)):
@@ -183,6 +245,3 @@ class LiveJack(object):
                 channel_id = self.channel_map[channel_idx]
 
                 self.local_viewer_map[loc][channel_id] = min_site
-    def assign_vmf(self):
-        # out put sites
-        pass
