@@ -10,8 +10,9 @@ class Topology(object):
             G.add_edge(u, v, id = i, bandwidth = bandwidth, capacity = bandwidth, init_cost = cost, cost = cost)
         self.servers = []
         for node in topo_json['servers']:
+            G.node[int(node)]['init_server'] = topo_json['servers'][node]
             G.node[int(node)]['server'] = topo_json['servers'][node]
-            self.servers.append(node)
+            self.servers.append(int(node))
         for node in topo_json['qoe']:
             G.node[int(node)]['init_qoe'] = topo_json['qoe'][node][:]
             G.node[int(node)]['qoe'] = topo_json['qoe'][node][:]
@@ -27,9 +28,9 @@ class Topology(object):
                 self.routing[i][j] = paths[j]
 
     def get_nearest_server(self, pos):
-        server_hop = [(node, len(self.routing[pos])[node])
+        server_hop = [(node, len(self.routing[pos][node]))
                       for node in self.topo.nodes()
-                      if "server" in self.topo.node[node] and self.topo.node[node] != 0]
+                      if node in self.servers]
         return min(server_hop, key=lambda x: x[1])[0]
 
 if __name__ == "__main__":
