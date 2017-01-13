@@ -7,8 +7,8 @@ class Trace(object):
 
         line = data.readline()
         while line != "":
-            seq, cType, cPos, cTarget, liveId = line.split(',')
-            pos, target = map[cPos], map[cTarget]
+            seq, cType, cPos, cTarget, liveId = line.strip().split(',')
+            pos, target = self.map[cPos], self.map[cTarget]
             if cType == "v":
                 if liveId not in self.requests:
                     self.requests[liveId] = [0] * number_of_nodes
