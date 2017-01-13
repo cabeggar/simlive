@@ -44,12 +44,13 @@ class Multicast(object):
                 # Get delivery tree from minimum spanning tree
                 T = nx.minimum_spanning_tree(G)
                 root = self.system.channels[channel]['src']
-                visited = set()
+                visited = set([])
                 queue = deque([root])
                 while queue:
                     node = queue.popleft()
                     for neighbor in T.neighbors(node):
+                        if neighbor in visited:
+                            continue
                         self.system.delivery_tree[neighbor][node].append(channel)
-                        if neighbor not in visited:
-                            queue.append(neighbor)
-                            visited.add(neighbor)
+                        queue.append(neighbor)
+                    visited.add(node)

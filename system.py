@@ -12,6 +12,3 @@ class System(object):
         self.viewers = [defaultdict(int) for _ in xrange(topology.topo.number_of_nodes())]
         # target -> {source -> channel_id_array}
         self.delivery_tree = defaultdict(lambda : defaultdict(list))
-        self.viewers = [{} for _ in xrange(topology.topo.number_of_nodes)]
-        # target -> {source -> channel_id_array}
-        self.delivery_tree = defaultdict(defaultdict(list))

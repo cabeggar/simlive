@@ -33,6 +33,13 @@ class Topology(object):
                       if node in self.servers]
         return min(server_hop, key=lambda x: x[1])[0]
 
+    def get_links_on_path(self, x, y):
+        links = []
+        path = self.routing[x][y]
+        for k in xrange(1, len(path)):
+            links.append((path[k - 1], path[k]))
+        return links
+
 if __name__ == "__main__":
     with open('topo/nsfnet.json') as sample_topo:
         data = json.load(sample_topo)
