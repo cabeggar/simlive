@@ -1,15 +1,18 @@
 import os
 from collections import defaultdict
 import random
+from random_ttl import RandomTTL
 
-def get_ttl():
-    return 1
+def get_ttl(random_ttl):
+    return random_ttl.get_random_ttl(1, 4)
 
 map = {"New York": 0, "Atlanta": 1, "Chicago": 2, "San Francisco": 3, "Los Angeles": 4, "Salt Lake City": 5, "Miami": 6, "Kaiserslautern": 7, "Austin": 8}
 channels = defaultdict(bool)
 viewer_seq = 0
 viewer_set = [[defaultdict(list) for _ in xrange(len(map))] for _ in xrange(len(map))]
 viewer_ttl = defaultdict(int)
+
+random_ttl = RandomTTL(1)
 
 trace_no = 1
 while True:
@@ -72,7 +75,7 @@ while True:
                     else:
                         for _ in xrange(request_no - len(viewer_list)):
                             viewer_list.append(viewer_seq)
-                            viewer_ttl[viewer_seq] = get_ttl()
+                            viewer_ttl[viewer_seq] = get_ttl(random_ttl)
                             new_trace.write('{},v,i,{},{},{}\n'.format(viewer_seq, i, j, channel))
                             viewer_seq += 1
         print '{} done'.format(read_path)
