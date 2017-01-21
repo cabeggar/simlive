@@ -44,7 +44,6 @@ def recalculate_access_traffic(channel, node_id, system, topology, viewer_number
             # topology.topo.edge[u][v]['capacity'] += int(100 * viewer_number * probability)
             topology.topo.edge[u][v]['cost'] -= int(100 * viewer_number * probability)
 
-
 def remove_user(topology, trace, system):
     for channel, request in trace.requests.iteritems():
         for i in xrange(topology.topo.number_of_nodes()):
@@ -129,7 +128,6 @@ def update_network_status(topology, trace, system):
     #     print topology.topo.edge[u][v]['capacity']
 
     return failed_access, len(failed_channels)
-
 
 if __name__ == "__main__":
     with open('topo/nsfnet.json') as sample_topo:
