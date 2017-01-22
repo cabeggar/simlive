@@ -81,11 +81,11 @@ class Trace(object):
                         else:
                             # Decrease viewer TTL
                             viewer_ttl[viewer_id] -= 1
-                        for viewer_id in to_remove:
-                            # Leaving viewer
-                            viewer_list.remove(viewer_id)
-                            del viewer_ttl[viewer_id]
-                        self.schedule[trace_no][3] += viewer_list
+                    for viewer_id in to_remove:
+                        # Leaving viewer
+                        viewer_list.remove(viewer_id)
+                        del viewer_ttl[viewer_id]
+                    self.schedule[trace_no][3] += to_remove
 
             for i in xrange(len(request)):
                 for channel, request_no in request[i].iteritems():
