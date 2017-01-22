@@ -17,4 +17,6 @@ class Trace(object):
                 self.channels[liveId] = pos
             line = data.readline()
 
+        
+
         data.close()

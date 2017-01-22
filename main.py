@@ -7,7 +7,8 @@ from trace import Trace
 from random import shuffle
 import os.path
 
-def remove_channel(channel_to_remove, topology, trace, system):
+
+def remove_channel(channel_to_remove, topology, system):
     # Remove channel traffic from delivery tree
     for target, source_channel in system.delivery_tree.iteritems():
         for source, channel in source_channel.iteritems():
@@ -34,6 +35,7 @@ def remove_channel(channel_to_remove, topology, trace, system):
         for s in system.delivery_tree[t]:
             system.delivery_tree[t][s].remove(channel)
 
+
 def recalculate_access_traffic(channel, node_id, system, topology, viewer_number):
     for server, probability in system.access_point[node_id][channel].iteritems():
         # TODO: set new qoe value
@@ -43,6 +45,7 @@ def recalculate_access_traffic(channel, node_id, system, topology, viewer_number
             # TODO: set capacity value
             # topology.topo.edge[u][v]['capacity'] += int(100 * viewer_number * probability)
             topology.topo.edge[u][v]['cost'] -= int(100 * viewer_number * probability)
+
 
 def remove_user(topology, trace, system):
     for channel, request in trace.requests.iteritems():
@@ -56,8 +59,8 @@ def remove_user(topology, trace, system):
                 diff = system[i][channel] - request[i]
                 recalculate_access_traffic(channel, i, system, topology, diff)
 
-def update_network_status(topology, trace, system):
 
+def update_network_status(topology, trace, system):
     # Update number of viewers in the system
     for channel, request in trace.requests.iteritems():
         for i in xrange(topology.topo.number_of_nodes()):
@@ -75,7 +78,7 @@ def update_network_status(topology, trace, system):
     failed_access = 0
     failed_channels = set()
     channels = system.channels.keys()[:]
-    shuffle(channels) # Shuffle the order of channels for random choice
+    shuffle(channels)  # Shuffle the order of channels for random choice
 
     for channel in channels:
         # Try to add channel delivery traffic into network
@@ -129,6 +132,7 @@ def update_network_status(topology, trace, system):
 
     return failed_access, len(failed_channels)
 
+
 if __name__ == "__main__":
     with open('topo/nsfnet.json') as sample_topo:
         # Load topology
@@ -148,7 +152,7 @@ if __name__ == "__main__":
                 break
 
             # Read crawled data
-            trace = Trace('trace/' + str(i), topology.topo.number_of_nodes())
+            trace = Trace('new_trace/' + str(i), topology.topo.number_of_nodes())
             system = System(topology)
 
             # Remove leaving channel and users
