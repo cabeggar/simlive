@@ -39,9 +39,6 @@ class Trace(object):
             # Initialize schedule for current timestamp
             self.schedule[trace_no] = [[], [], [], []]
 
-            # Set all channel to expiring as default in this round
-            for channel in channels:
-                channels[channel] = False
             request = [defaultdict(int) for _ in xrange(len(map))]
 
             trace = open(read_path, 'r')
@@ -70,6 +67,8 @@ class Trace(object):
                                 del viewer_ttl[viewer_id]
                                 self.schedule[trace_no][3].append(viewer_id)
                             del viewer_set[i][channel]
+            for channel in self.schedule[trace_no][1]:
+                del channels[channel]
 
             for i in xrange(len(viewer_set)):
                 for channel, viewer_list in viewer_set[i].iteritems():
@@ -108,6 +107,10 @@ class Trace(object):
                             self.schedule[trace_no][2].append(viewer_seq)
                             self.viewers[viewer_seq] = [i, channel, None]
                             viewer_seq += 1
+
+            # Set all channel to expiring as default in this round
+            for channel in channels:
+                channels[channel] = False
 
             print "{} done".format(read_path)
             trace_no += 1
