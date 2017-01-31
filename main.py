@@ -170,12 +170,11 @@ if __name__ == "__main__":
     #     print "Pickle object loaded"
     trace = Trace('trace/')
     rounds = len(trace.schedule)
-    print "Pickle object loaded"
 
     # Initialize system
     system = System(topology)
 
-    for round_no in xrange(1, rounds + 1):
+    for round_no in xrange(rounds):
         # Remove leaving channels
         for leaving_channel in trace.schedule[round_no][1]:
             del trace.channels[leaving_channel]
@@ -209,4 +208,4 @@ if __name__ == "__main__":
         print failed_access, failed_deliver, len(channels_with_new_delivery_tree)
 
         # Remove expiring events
-        del trace.schedule[round_no]
+        trace.schedule[round_no] = [[], [], [], []]

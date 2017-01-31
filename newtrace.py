@@ -10,7 +10,7 @@ class Trace(object):
         # channel_id => source
         self.channels = defaultdict(int)
         # timestamp => [[joining channels], [leaving channels], [joining users], [leaving users]]
-        self.schedule = {}
+        self.schedule = [[] for _ in xrange(20)]
         # read from traces in a directory
         self._read_from_directory(dir)
 
@@ -41,9 +41,9 @@ class Trace(object):
         viewer_set = [defaultdict(list) for _ in xrange(len(map))]
         viewer_ttl = defaultdict(int)
 
-        trace_no = 1
+        trace_no = 0
         while True:
-            read_path = str(dir) + str(trace_no)
+            read_path = str(dir) + str(trace_no+1)
             if not os.path.isfile(read_path):
                 print "END"
                 break
