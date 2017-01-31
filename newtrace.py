@@ -22,8 +22,20 @@ class Trace(object):
 
     def _read_from_directory(self, dir):
         # prepare temporary data structures
-        map = {"New York": 0, "Atlanta": 1, "Chicago": 2, "San Francisco": 3, "Los Angeles": 4, "Salt Lake City": 5,
-               "Miami": 6, "Kaiserslautern": 7, "Austin": 8}
+        map = {"Palo Alto": 0,
+               "Seattle": 1,
+               "San Diego": 2,
+               "Salt Lake City": 3,
+               "Boulder": 4,
+               "Houston": 5,
+               "Lincoln": 6,
+               "Champaign": 7,
+               "Ann Arbor": 8,
+               "Pittsburgh": 9,
+               "Atlanta": 10,
+               "Ithaca": 11,
+               "College Park": 12,
+               "Princeton": 13}
         channels = defaultdict(bool)
         viewer_seq = 0
         viewer_set = [defaultdict(list) for _ in xrange(len(map))]
@@ -44,7 +56,7 @@ class Trace(object):
             trace = open(read_path, 'r')
             line = trace.readline()
             while line != "":
-                seq, cType, cPos, cTarget, liveId = line.strip().split(',')
+                seq, cType, cPos, cPosState, cTarget, cTargetState, liveId = line.strip().split(',')
                 pos, target = map[cPos], map[cTarget]
                 if cType == "s":
                     if liveId not in channels:

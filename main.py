@@ -122,7 +122,7 @@ def update_network_status(topology, trace, system, round_no, channels_with_new_d
             failed_access += viewer_number
             for server, probability in server_probability.iteritems():
                 topology.topo.node[server]['server'] += int(viewer_number * probability)
-                topology.topo.node[server]['qoe'] -= int(viewer_number * probability)
+                topology.topo.node[server]['qoe'][pos] -= int(viewer_number * probability)
 
     new_viewers = [defaultdict(int) for _ in xrange(topology.topo.number_of_nodes())]
     for viewer_id in trace.schedule[round_no][2]:
