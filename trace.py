@@ -1,13 +1,26 @@
 class Trace(object):
     def __init__(self, trace, number_of_nodes):
         data = open(trace, 'r')
-        self.map = {"New York": 0, "Atlanta": 1, "Chicago": 2, "San Francisco": 3, "Los Angeles": 4, "Salt Lake City": 5, "Miami": 6, "Kaiserslautern": 7, "Austin": 8}
+        self.map = {"Palo Alto": 0,
+                    "Seattle": 1,
+                    "San Diego": 2,
+                    "Salt Lake City": 3,
+                    "Boulder": 4,
+                    "Houston": 5,
+                    "Lincoln": 6,
+                    "Champaign": 7,
+                    "Ann Arbor": 8,
+                    "Pittsburgh": 9,
+                    "Atlanta": 10,
+                    "Ithaca": 11,
+                    "College Park": 12,
+                    "Princeton": 13}
         self.requests = {}
         self.channels = {}
 
         line = data.readline()
         while line != "":
-            seq, cType, cPos, cTarget, liveId = line.strip().split(',')
+            seq, cType, cPos, cPosState, cTarget, cTargetState, liveId = line.strip().split(',')
             pos, target = self.map[cPos], self.map[cTarget]
             if cType == "v":
                 if liveId not in self.requests:
@@ -16,5 +29,7 @@ class Trace(object):
             elif cType == "s":
                 self.channels[liveId] = pos
             line = data.readline()
+
+        
 
         data.close()
