@@ -5,7 +5,7 @@ from system import System
 from topology import Topology
 from random import shuffle
 from collections import defaultdict
-from newtrace import Trace
+from trace import Trace
 
 
 def remove_channel(channel_to_remove, topology, system):
