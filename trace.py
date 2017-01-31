@@ -10,7 +10,7 @@ class Trace(object):
         # channel_id => source
         self.channels = defaultdict(int)
         # timestamp => [[joining channels], [leaving channels], [joining users], [leaving users]]
-        self.schedule = [[] for _ in xrange(20)]
+        self.events = [[] for _ in xrange(20)]
         # read from traces in a directory
         self._read_from_directory(dir)
 
@@ -48,8 +48,8 @@ class Trace(object):
                 print "END"
                 break
 
-            # Initialize schedule for current timestamp
-            self.schedule[trace_no] = [[], [], [], []]
+            # Initialize events for current timestamp
+            self.events[trace_no] = [[], [], [], []]
 
             request = [defaultdict(int) for _ in xrange(len(map))]
 
@@ -61,7 +61,7 @@ class Trace(object):
                 if cType == "s":
                     if liveId not in channels:
                         # Append new channel
-                        self.schedule[trace_no][0].append(liveId)
+                        self.events[trace_no][0].append(liveId)
                         self.channels[liveId] = pos
                     channels[liveId] = True
                 elif cType == "v":
@@ -71,15 +71,15 @@ class Trace(object):
             for channel in channels:
                 if not channels[channel]:
                     # Leaving channel
-                    self.schedule[trace_no][1].append(channel)
+                    self.events[trace_no][1].append(channel)
                     # Leaving viewer who are watching leaving channel
                     for i in xrange(len(viewer_set)):
                         if channel in viewer_set[i]:
                             for viewer_id in viewer_set[i][channel]:
                                 del viewer_ttl[viewer_id]
-                                self.schedule[trace_no][3].append(viewer_id)
+                                self.events[trace_no][3].append(viewer_id)
                             del viewer_set[i][channel]
-            for channel in self.schedule[trace_no][1]:
+            for channel in self.events[trace_no][1]:
                 del channels[channel]
 
             for i in xrange(len(viewer_set)):
@@ -96,7 +96,7 @@ class Trace(object):
                         # Leaving viewer
                         viewer_list.remove(viewer_id)
                         del viewer_ttl[viewer_id]
-                    self.schedule[trace_no][3] += to_remove
+                    self.events[trace_no][3] += to_remove
 
             for i in xrange(len(request)):
                 for channel, request_no in request[i].iteritems():
@@ -110,13 +110,13 @@ class Trace(object):
                             to_remove = random.choice(viewer_list)
                             viewer_list.remove(to_remove)
                             del viewer_ttl[to_remove]
-                            self.schedule[trace_no][3].append(to_remove)
+                            self.events[trace_no][3].append(to_remove)
                     else:
                         # Need to add new viewers
                         for _ in xrange(request_no - len(viewer_list)):
                             viewer_list.append(viewer_seq)
                             viewer_ttl[viewer_seq] = self._get_expovariate_ttl()
-                            self.schedule[trace_no][2].append(viewer_seq)
+                            self.events[trace_no][2].append(viewer_seq)
                             self.viewers[viewer_seq] = [i, channel, None]
                             viewer_seq += 1
 

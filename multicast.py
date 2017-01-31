@@ -13,7 +13,7 @@ class Multicast(object):
     def compute(self):
         channels_with_new_delivery_tree = set()
         # assign access point
-        for new_viewer_id in self.trace.schedule[self.round_no][2]:
+        for new_viewer_id in self.trace.events[self.round_no][2]:
             position, channel, access_point = self.trace.viewers[new_viewer_id]
 
             # If this position already has an access point for this channel

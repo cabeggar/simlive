@@ -60,7 +60,7 @@ def remove_users(leaving_users, topology, system):
 
 def update_network_status(topology, trace, system, round_no, channels_with_new_delivery_tree, new_delivery_tree):
     # Update number of viewers in the system
-    for new_viewer_id in trace.schedule[round_no][2]:
+    for new_viewer_id in trace.events[round_no][2]:
         position, channel, access_point = trace.viewers[new_viewer_id]
         system.viewers[position][channel] += 1
 
@@ -125,7 +125,7 @@ def update_network_status(topology, trace, system, round_no, channels_with_new_d
                 topology.topo.node[server]['qoe'][pos] -= int(viewer_number * probability)
 
     new_viewers = [defaultdict(int) for _ in xrange(topology.topo.number_of_nodes())]
-    for viewer_id in trace.schedule[round_no][2]:
+    for viewer_id in trace.events[round_no][2]:
         position, channel, access_point = trace.viewers[viewer_id]
         # Get new viewer whose channel can be successfully delivered
         if channel in failed_channels:
@@ -166,24 +166,24 @@ if __name__ == "__main__":
     # Initialize trace
     # with open('new_trace_pickle') as new_trace:
     #     trace = pickle.load(new_trace)
-    #     rounds = len(trace.schedule)
+    #     rounds = len(trace.events)
     #     print "Pickle object loaded"
     trace = Trace('trace/')
-    rounds = len(trace.schedule)
+    rounds = len(trace.events)
 
     # Initialize system
     system = System(topology)
 
     for round_no in xrange(rounds):
         # Remove leaving channels
-        for leaving_channel in trace.schedule[round_no][1]:
+        for leaving_channel in trace.events[round_no][1]:
             del trace.channels[leaving_channel]
             remove_channel(leaving_channel, topology, system)
         print "Leaving channels removed!"
 
         # Remove leaving users
         leaving_users = [defaultdict(int) for _ in xrange(topology.topo.number_of_nodes())]
-        for leaving_user in trace.schedule[round_no][3]:
+        for leaving_user in trace.events[round_no][3]:
             position, channel_id, access_id = trace.viewers[leaving_user]
             del trace.viewers[leaving_user]
             leaving_users[position][access_id] += 1
@@ -192,7 +192,7 @@ if __name__ == "__main__":
         print "Leaving user removed!"
 
         # Add new channels
-        for channel in trace.schedule[round_no][0]:
+        for channel in trace.events[round_no][0]:
             system.channels[channel]['src'] = topology.get_nearest_server(trace.channels[channel])
             system.channels[channel]['sites'] = []
         print "New channels prepared!"
@@ -208,4 +208,4 @@ if __name__ == "__main__":
         print failed_access, failed_deliver, len(channels_with_new_delivery_tree)
 
         # Remove expiring events
-        trace.schedule[round_no] = [[], [], [], []]
+        trace.events[round_no] = [[], [], [], []]
