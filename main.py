@@ -47,6 +47,7 @@ def recalculate_access_traffic(channel, node_id, system, topology, viewer_number
             # topology.topo.edge[u][v]['capacity'] += int(100 * viewer_number * probability)
             topology.topo.edge[u][v]['cost'] -= int(100 * viewer_number * probability)
 
+
 def remove_users(leaving_users, topology, system):
     for position, access_numbers in enumerate(leaving_users):
         for access_point, viewer_number in access_numbers.iteritems():
@@ -56,6 +57,41 @@ def remove_users(leaving_users, topology, system):
             for u, v in links:
                 # TODO: set capacity value
                 topology.topo.edge[u][v]['cost'] -= viewer_number
+
+
+def can_be_removed(server, channel, server_access_numbers, delivery_tree):
+    if server_access_numbers[server][channel] != 0:
+        return False
+    else:
+        for target in delivery_tree.iterkeys():
+            if server in system.delivery_tree[target] and channel in system.delivery_tree[target][server]:
+                # The server is delivering content to other servers
+                return False
+        return True
+
+
+def shrink_delivery_tree(server_access_numbers, leaving_channels, topology, system):
+    for server in server_access_numbers.iterkeys():
+        for channel in server_access_numbers[server].iterkeys():
+            if channel in leaving_channels:
+                continue
+            remove_server_from_delivery_tree(channel, server, server_access_numbers, system, topology)
+
+
+def remove_server_from_delivery_tree(channel, server, server_access_numbers, system, topology):
+    if can_be_removed(server, channel, server_access_numbers, system.delivery_tree):
+        for source in system.delivery_tree[server].iterkeys():
+            if channel in system.delivery_tree[server][source]:
+                system.delivery_tree[server][source].remove(channel)
+                topology.topo.node[source]['qoe'][server] -= 1
+                links = topology.get_links_on_path(source, server)
+                for u, v in links:
+                    # TODO: set capacity value
+                    topology.topo.edge[u][v]['capacity'] += 100
+                    topology.topo.edge[u][v]['cost'] -= 100
+                remove_server_from_delivery_tree(channel, source, server_access_numbers, system, topology)
+        if server in system.channels[channel]['sites']:
+            system.channels[channel]['sites'].remove(server)
 
 
 def update_network_status(topology, trace, system, round_no, channels_with_new_delivery_tree, new_delivery_tree):
@@ -183,12 +219,19 @@ if __name__ == "__main__":
 
         # Remove leaving users
         leaving_users = [defaultdict(int) for _ in xrange(topology.topo.number_of_nodes())]
+        server_access_numbers = defaultdict(lambda : defaultdict(int)) # server => {channel => number of users accessing here}
+        for pos in xrange(topology.topo.number_of_nodes()):
+            for channel in system.access_point[pos].iterkeys():
+                for ap, prob in system.access_point[pos][channel].iteritems():
+                    server_access_numbers[ap][channel] += system.viewers[pos][channel] * prob
         for leaving_user in trace.events[round_no][3]:
             position, channel_id, access_id = trace.viewers[leaving_user]
             del trace.viewers[leaving_user]
             leaving_users[position][access_id] += 1
             system.viewers[position][channel_id] -= 1
+            server_access_numbers[access_id][channel_id] -= 1
         remove_users(leaving_users, topology, system)
+        shrink_delivery_tree(server_access_numbers, trace.events[round_no][1], topology, system)
         print "Leaving user removed!"
 
         # Add new channels

@@ -4,7 +4,7 @@ from collections import defaultdict
 class System(object):
     def __init__(self, topology):
         self.topology = topology
-        # channel_id -> {'site>[node], 'bw'->val, 'src'->source}
+        # channel_id -> {'sites'>[node], 'bw'->val, 'src'->source}
         self.channels = defaultdict(dict)
         # [channel_id -> {server_id -> probability}]
         self.access_point = [defaultdict(dict) for _ in xrange(topology.topo.number_of_nodes())]
