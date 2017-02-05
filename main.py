@@ -94,7 +94,7 @@ def remove_server_from_delivery_tree(channel, server, server_access_numbers, sys
             system.channels[channel]['sites'].remove(server)
 
 
-def update_network_status(topology, trace, system, round_no, channels_with_new_delivery_tree, new_delivery_tree):
+def update_network_status(topology, trace, system, round_no, channels_with_new_delivery_tree, new_delivery_tree, incremental=True):
     # Update number of viewers in the system
     for new_viewer_id in trace.events[round_no][2]:
         position, channel, access_point = trace.viewers[new_viewer_id]
@@ -106,11 +106,13 @@ def update_network_status(topology, trace, system, round_no, channels_with_new_d
         for u in system.delivery_tree.iterkeys():
             for v in system.delivery_tree[u].iterkeys():
                 if channel in system.delivery_tree[u][v]:
-                    links = topology.get_links_on_path(u, v)
-                    for x, y in links:
-                        topology.topo.edge[x][y]['capacity'] += 100
-                        topology.topo.edge[x][y]['cost'] -= 1
-                    system.delivery_tree[u][v].remove(channel)
+                    if not incremental:
+                        # We don't need to remove old traffic from delivery tree
+                        links = topology.get_links_on_path(u, v)
+                        for x, y in links:
+                            topology.topo.edge[x][y]['capacity'] += 100
+                            topology.topo.edge[x][y]['cost'] -= 1
+                        system.delivery_tree[u][v].remove(channel)
                     updated_channel.add(channel)
 
 
@@ -149,6 +151,7 @@ def update_network_status(topology, trace, system, round_no, channels_with_new_d
                         if channel not in system.delivery_tree[target][source]:
                             system.delivery_tree[target][source].append(channel)
 
+    # TODO: try to define failed access partially
     updated_and_failed_channel = failed_channels & updated_channel
     for pos, channel_serve in enumerate(system.access_point):
         for channel, server_probability in channel_serve.iteritems():
@@ -242,12 +245,12 @@ if __name__ == "__main__":
 
         algo = Multicast(topology, trace, system, round_no)
         # Compute deliver tree and access points for current trace. The results should be stored in system
-        channels_with_new_delivery_tree, new_delivery_tree = algo.compute()
+        channels_with_new_delivery_tree, new_delivery_tree = algo.compute(incremental=True)
         print "Algorithm computation complete!"
         # Update network status based on updated system
         failed_access, failed_deliver = update_network_status(topology, trace, system, round_no,
                                                               channels_with_new_delivery_tree,
-                                                              new_delivery_tree)
+                                                              new_delivery_tree, incremental=True)
         print failed_access, failed_deliver, len(channels_with_new_delivery_tree)
 
         # Remove expiring events

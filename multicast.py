@@ -10,8 +10,10 @@ class Multicast(object):
         self.system = system
         self.round_no = round_no
 
-    def compute(self):
+    def compute(self, incremental=True):
         channels_with_new_delivery_tree = set()
+        new_delivery_tree = defaultdict(lambda: defaultdict(list))
+
         # assign access point
         for new_viewer_id in self.trace.events[self.round_no][2]:
             position, channel, access_point = self.trace.viewers[new_viewer_id]
@@ -29,14 +31,25 @@ class Multicast(object):
             # Check whether the chosen server is on delivery tree of this channel
             servers = [self.system.channels[channel]['src']] + self.system.channels[channel]['sites']
             if server not in servers:
+                if incremental:
+                    # Add a link from the nearest other server with channel available to the current server in delivery tree
+                    min_hops, nearest_source = None, None
+                    for source in servers:
+                        if min_hops == None or len(self.topology.routing[server][source]) < min_hops:
+                            min_hops = len(self.topology.routing[server][source])
+                            nearest_source = source
+                    new_delivery_tree[server][source].append(channel)
                 self.system.channels[channel]['sites'].append(server)
                 channels_with_new_delivery_tree.add(channel)
 
+
+        if incremental:
+            # If incremental, we've already appended new server to delivery tree
+            return channels_with_new_delivery_tree, new_delivery_tree
+
         # Compute new delivery trees
-        new_delivery_tree = defaultdict(lambda: defaultdict(list))
         for channel in channels_with_new_delivery_tree:
             servers = [self.system.channels[channel]['src']] + self.system.channels[channel]['sites']
-
             # compute delivery tree
             # make overlay graph
             G = nx.Graph()
