@@ -5,14 +5,32 @@ import random
 
 class Trace(object):
     def __init__(self, dir):
-        # viewer_id => [position, channel_id, access_id]
-        self.viewers = defaultdict(list)
+        # viewer_id => [position, channel_id, access_id] FIXME:deprecated
+        # viewer_id => [position, channel_id]
+        self.viewer_info = defaultdict(list)
         # channel_id => source
-        self.channels = defaultdict(int)
-        # timestamp => [[joining channels], [leaving channels], [joining users], [leaving users]]
+        # self.channel_info = defaultdict(int) FIXME: depreated
+        # channel_id => [source, bw]
+        self.channel_info = defaultdict(int)
+        # timestamp => [[joining channels], [leaving channels],
+        #               [joining users], [leaving users]]
         self.events = [[] for _ in xrange(20)]
         # read from traces in a directory
         self._read_from_directory(dir)
+
+        # Boven: get next
+        self.time_slot = 0
+        self.max_time_slot = -1
+
+    def get_next_event(self):
+        if self.time_slot == self.max_time_slot:
+            return None
+        else:
+            # release trace memory
+            if self.time_slot > 0:
+                self.events[self.time_slot-1] = None
+
+            return self.events[self.time_slot]
 
     def _get_expovariate_ttl(self):
         return int(random.expovariate(0.5)+1)
@@ -42,6 +60,7 @@ class Trace(object):
         viewer_ttl = defaultdict(int)
 
         trace_no = 0
+
         while True:
             read_path = str(dir) + str(trace_no+1)
             if not os.path.isfile(read_path):
@@ -55,14 +74,17 @@ class Trace(object):
 
             trace = open(read_path, 'r')
             line = trace.readline()
+
             while line != "":
-                seq, cType, cPos, cPosState, cTarget, cTargetState, liveId = line.strip().split(',')
+                seq, cType, cPos, cPosState, cTarget, cTargetState, liveId = \
+                    line.strip().split(',')
                 pos, target = map[cPos], map[cTarget]
+
                 if cType == "s":
                     if liveId not in channels:
                         # Append new channel
                         self.events[trace_no][0].append(liveId)
-                        self.channels[liveId] = pos
+                        self.channel_info[liveId] = pos
                     channels[liveId] = True
                 elif cType == "v":
                     request[pos][liveId] += 1
@@ -102,22 +124,22 @@ class Trace(object):
                 for channel, request_no in request[i].iteritems():
                     viewer_list = viewer_set[i][channel]
                     if request_no == len(viewer_list):
-                        # No need to increase or remove viewers
+                        # No need to increase or remove viewer_info
                         continue
                     elif request_no < len(viewer_list):
-                        # Need to remove viewers
+                        # Need to remove viewer_info
                         while request_no < len(viewer_list):
                             to_remove = random.choice(viewer_list)
                             viewer_list.remove(to_remove)
                             del viewer_ttl[to_remove]
                             self.events[trace_no][3].append(to_remove)
                     else:
-                        # Need to add new viewers
+                        # Need to add new viewer_info
                         for _ in xrange(request_no - len(viewer_list)):
                             viewer_list.append(viewer_seq)
                             viewer_ttl[viewer_seq] = self._get_expovariate_ttl()
                             self.events[trace_no][2].append(viewer_seq)
-                            self.viewers[viewer_seq] = [i, channel, None]
+                            self.viewer_info[viewer_seq] = [i, channel, None]
                             viewer_seq += 1
 
             # Set all channel to expiring as default in this round

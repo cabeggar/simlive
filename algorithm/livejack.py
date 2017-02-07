@@ -4,6 +4,19 @@ import networkx as nx
 
 
 class LiveJack(object):
+    def __init__(self, topology, trace, system, round_no):
+        self.topology = topology
+        self.trace = trace
+        self.system = system
+        self.round_no = round_no
+
+    def attach_to_close(self):
+        # find the closest access point to attach
+
+        # if closest access point does not exist, attach instead to origin
+
+        return
+
     def __init__(self, topology, channels, viewers):
         self.topology = topology
 

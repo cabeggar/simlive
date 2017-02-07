@@ -1,11 +1,12 @@
 #!/usr/bin/python
 import json
-from multicast import Multicast
+from algorithm.multicast import Multicast
 from system import System
 from topology import Topology
 from random import shuffle
 from collections import defaultdict
 from trace import Trace
+import sys
 
 
 def remove_channel(channel_to_remove, topology, system):
@@ -23,7 +24,8 @@ def remove_channel(channel_to_remove, topology, system):
     # Remove access traffic of that channel
     for node_id in xrange(topology.topo.number_of_nodes()):
         viewer_number = system.viewers[node_id][channel_to_remove]
-        recalculate_access_traffic(channel_to_remove, node_id, system, topology, viewer_number)
+        recalculate_access_traffic(channel_to_remove, node_id, system,
+                                   topology, viewer_number)
 
     # Delete that channel from system
     del system.channels[channel_to_remove]
@@ -37,15 +39,22 @@ def remove_channel(channel_to_remove, topology, system):
                 system.delivery_tree[t][s].remove(channel_to_remove)
 
 
-def recalculate_access_traffic(channel, node_id, system, topology, viewer_number):
-    for server, probability in system.access_point[node_id][channel].iteritems():
+def recalculate_access_traffic(channel, node_id, system,
+                               topology, viewer_number):
+    for server, probability in \
+            system.access_point[node_id][channel].iteritems():
         # TODO: set new qoe value
-        topology.topo.node[server]['qoe'][node_id] += int(1 * viewer_number * probability)
+        topology.topo.node[server]['qoe'][node_id] += \
+            int(1 * viewer_number * probability)
         links = topology.get_links_on_path(node_id, server)
         for u, v in links:
             # TODO: set capacity value
-            # topology.topo.edge[u][v]['capacity'] += int(100 * viewer_number * probability)
-            topology.topo.edge[u][v]['cost'] -= int(100 * viewer_number * probability)
+            # topology.topo.edge[u][v]['capacity'] += \
+            #    int(100 * viewer_number * probability)
+            topology.topo.edge[u][v]['cost'] -= int(100 *
+                                                    viewer_number *
+                                                    probability)
+
 
 def remove_users(leaving_users, topology, system):
     for position, access_numbers in enumerate(leaving_users):
@@ -58,7 +67,8 @@ def remove_users(leaving_users, topology, system):
                 topology.topo.edge[u][v]['cost'] -= viewer_number
 
 
-def update_network_status(topology, trace, system, round_no, channels_with_new_delivery_tree, new_delivery_tree):
+def update_network_status(topology, trace, system, round_no,
+                          channels_with_new_delivery_tree, new_delivery_tree):
     # Update number of viewers in the system
     for new_viewer_id in trace.events[round_no][2]:
         position, channel, access_point = trace.viewers[new_viewer_id]
@@ -77,7 +87,6 @@ def update_network_status(topology, trace, system, round_no, channels_with_new_d
                     system.delivery_tree[u][v].remove(channel)
                     updated_channel.add(channel)
 
-
     failed_access = 0
     failed_channels = set()
     channels = list(channels_with_new_delivery_tree)
@@ -93,11 +102,13 @@ def update_network_status(topology, trace, system, round_no, channels_with_new_d
                 for u, v in links:
                     # TODO: set capacity value
                     if topology.topo.edge[u][v]['capacity'] - 100 < 0:
-                        # If capacity doesn't allow, mark the channel as delivery failure
+                        # If capacity doesn't allow,
+                        # mark the channel as delivery failure
                         failed_channels.add(channel)
                         break
 
-        # Update channel delivery traffic if capacity allows otherwise update access failure users
+        # Update channel delivery traffic if capacity
+        # allows otherwise update access failure users
         if channel not in failed_channels:
             for target, source_channel in new_delivery_tree.iteritems():
                 for source, channel_arr in source_channel.iteritems():
@@ -121,10 +132,14 @@ def update_network_status(topology, trace, system, round_no, channels_with_new_d
             viewer_number = system.viewers[pos][channel]
             failed_access += viewer_number
             for server, probability in server_probability.iteritems():
-                topology.topo.node[server]['server'] += int(viewer_number * probability)
-                topology.topo.node[server]['qoe'][pos] -= int(viewer_number * probability)
+                topology.topo.node[server]['server'] += int(viewer_number *
+                                                            probability)
+                topology.topo.node[server]['qoe'][pos] -= int(viewer_number *
+                                                              probability)
 
-    new_viewers = [defaultdict(int) for _ in xrange(topology.topo.number_of_nodes())]
+    new_viewers = [defaultdict(int) for _ in
+                   xrange(topology.topo.number_of_nodes())]
+
     for viewer_id in trace.events[round_no][2]:
         position, channel, access_point = trace.viewers[viewer_id]
         # Get new viewer whose channel can be successfully delivered
@@ -139,8 +154,10 @@ def update_network_status(topology, trace, system, round_no, channels_with_new_d
             # TODO: set qoe and server value
             # Try to fill server capacity with user requests
             if topology.topo.node[server]['server'] - viewer_number < 0:
-                failed_access += viewer_number - topology.topo.node[server]['server']
-                topology.topo.node[server]['qoe'][pos] += topology.topo.node[server]['server']
+                failed_access += viewer_number - \
+                    topology.topo.node[server]['server']
+                topology.topo.node[server]['qoe'][pos] += \
+                    topology.topo.node[server]['server']
                 topology.topo.node[server]['server'] = 0
             else:
                 topology.topo.node[server]['qoe'][pos] += viewer_number
@@ -169,6 +186,7 @@ if __name__ == "__main__":
     #     rounds = len(trace.events)
     #     print "Pickle object loaded"
     trace = Trace('trace/')
+
     rounds = len(trace.events)
 
     # Initialize system
@@ -182,30 +200,42 @@ if __name__ == "__main__":
         print "Leaving channels removed!"
 
         # Remove leaving users
-        leaving_users = [defaultdict(int) for _ in xrange(topology.topo.number_of_nodes())]
+        leaving_users = [defaultdict(int)
+                         for _ in xrange(topology.topo.number_of_nodes())]
+
         for leaving_user in trace.events[round_no][3]:
             position, channel_id, access_id = trace.viewers[leaving_user]
+
             del trace.viewers[leaving_user]
             leaving_users[position][access_id] += 1
             system.viewers[position][channel_id] -= 1
+
         remove_users(leaving_users, topology, system)
         print "Leaving user removed!"
 
         # Add new channels
         for channel in trace.events[round_no][0]:
-            system.channels[channel]['src'] = topology.get_nearest_server(trace.channels[channel])
+            system.channels[channel]['src'] = \
+                topology.get_nearest_server(trace.channels[channel])
             system.channels[channel]['sites'] = []
         print "New channels prepared!"
 
         algo = Multicast(topology, trace, system, round_no)
-        # Compute deliver tree and access points for current trace. The results should be stored in system
+
+        # Compute deliver tree and access points for current trace.
+        # The results should be stored in system
+
         channels_with_new_delivery_tree, new_delivery_tree = algo.compute()
         print "Algorithm computation complete!"
+
         # Update network status based on updated system
-        failed_access, failed_deliver = update_network_status(topology, trace, system, round_no,
-                                                              channels_with_new_delivery_tree,
-                                                              new_delivery_tree)
-        print failed_access, failed_deliver, len(channels_with_new_delivery_tree)
+        failed_access, failed_deliver = \
+            update_network_status(topology, trace, system, round_no,
+                                  channels_with_new_delivery_tree,
+                                  new_delivery_tree)
+
+        print failed_access, failed_deliver, \
+            len(channels_with_new_delivery_tree)
 
         # Remove expiring events
         trace.events[round_no] = [[], [], [], []]

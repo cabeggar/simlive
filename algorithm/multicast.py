@@ -18,7 +18,8 @@ class Multicast(object):
 
             # If this position already has an access point for this channel
             if channel in self.system.access_point[position]:
-                self.trace.viewers[new_viewer_id][2] = self.system.access_point[position][channel].keys()[0]
+                self.trace.viewers[new_viewer_id][2] = \
+                    self.system.access_point[position][channel].keys()[0]
                 continue
 
             # Assign nearest server as access_point
@@ -26,8 +27,10 @@ class Multicast(object):
             self.trace.viewers[new_viewer_id][2] = server
             self.system.access_point[position][channel] = {server: 1}
 
-            # Check whether the chosen server is on delivery tree of this channel
-            servers = [self.system.channels[channel]['src']] + self.system.channels[channel]['sites']
+            # Check whether the chosen server is
+            # on delivery tree of this channel
+            servers = [self.system.channels[channel]['src']] + \
+                self.system.channels[channel]['sites']
             if server not in servers:
                 self.system.channels[channel]['sites'].append(server)
                 channels_with_new_delivery_tree.add(channel)
@@ -35,7 +38,8 @@ class Multicast(object):
         # Compute new delivery trees
         new_delivery_tree = defaultdict(lambda: defaultdict(list))
         for channel in channels_with_new_delivery_tree:
-            servers = [self.system.channels[channel]['src']] + self.system.channels[channel]['sites']
+            servers = [self.system.channels[channel]['src']] + \
+                self.system.channels[channel]['sites']
 
             # compute delivery tree
             # make overlay graph
@@ -47,7 +51,8 @@ class Multicast(object):
                     links = []
                     path = self.topology.routing[u][v]
                     for k in xrange(1, len(path)):
-                        links.append(self.topology.topo[path[k-1]][path[k]]['bandwidth'])
+                        links.append(self.topology.topo[path[k-1]]
+                                     [path[k]]['bandwidth'])
                     G.add_edge(u, v, capacity=min(links))
 
             # Get delivery tree from minimum spanning tree
@@ -55,6 +60,7 @@ class Multicast(object):
             root = self.system.channels[channel]['src']
             visited = set([])
             queue = deque([root])
+
             while queue:
                 node = queue.popleft()
                 for neighbor in T.neighbors(node):
