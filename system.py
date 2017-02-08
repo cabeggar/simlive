@@ -27,11 +27,25 @@ class System(object):
         #                xrange(topology.topo.number_of_nodes())]
 
     def run(self):
+        event = self.trace.get_next_event()
+
+        if event is None:
+            return False
+
         joining_channels, leaving_channels, joining_viewers, leaving_viewers = \
-            self.trace.get_next_event()
+            event
 
         self._remove_leaving_channels(leaving_channels)
         self._remove_leaving_viewers(leaving_viewers)
+
+        # TODO: decision-based incremental tree appending
+            # 1. new channel & new viewers -> build spanning tree
+            # 2. old channel & new viewers -> increment spanning tree
+
+        # TODO: require refines ... say 100 rounds a time...
+            # reorgainize tree and viewer assignment
+
+        return True
 
     def _del_sorted_from_sorted(self, orig, to_del):
         idx_orig = 0

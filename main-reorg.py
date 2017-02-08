@@ -2,7 +2,8 @@
 from topology import Topology
 import json
 import sys
-
+from system import System
+from trace import Trace
 
 if __name__ == "__main__":
     # Initialize network
@@ -24,4 +25,6 @@ if __name__ == "__main__":
     # initialize simulation system
     system = System(topology, trace)
 
-    system.run()
+    while True:
+        if not system.run():
+            break
